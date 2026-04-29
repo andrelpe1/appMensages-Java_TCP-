@@ -105,7 +105,7 @@ public class CadastrarusuarioWindow extends JFrame {
 				JOptionPane.showMessageDialog(null,resposta.mensagem,String.valueOf(resposta.resposta) ,JOptionPane.INFORMATION_MESSAGE);
 				dispose();
 			}else {
-				JOptionPane.showMessageDialog(null,resposta.mensagem + "OOOOOO",String.valueOf(resposta.resposta) ,JOptionPane.ERROR_MESSAGE);
+				JOptionPane.showMessageDialog(null,resposta.mensagem ,String.valueOf(resposta.resposta) ,JOptionPane.ERROR_MESSAGE);
 			}
 		}catch (IOException e) {
 		    JOptionPane.showMessageDialog(null, "Conexão com servidor perdida!", "Erro", JOptionPane.ERROR_MESSAGE);
