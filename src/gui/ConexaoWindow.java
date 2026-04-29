@@ -61,7 +61,7 @@ public class ConexaoWindow extends JFrame {
 			ClientSocket = new Socket(serverIP, serverPorta);
 			 in = new DataInputStream(ClientSocket.getInputStream());    // aponta o duto de entrada para o socket do cliente
              out = new PrintStream(ClientSocket.getOutputStream()); 
-             JOptionPane.showMessageDialog(null,in.readLine(), "Servidor Retornou:", JOptionPane.INFORMATION_MESSAGE);
+             //JOptionPane.showMessageDialog(null,in.readLine(), "Servidor Retornou:", JOptionPane.INFORMATION_MESSAGE);
              abrirOpcoes(ClientSocket,in,out);
              
              

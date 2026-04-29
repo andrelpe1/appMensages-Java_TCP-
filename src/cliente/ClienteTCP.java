@@ -30,19 +30,18 @@ public class ClienteTCP {
 
               ClientSocket = new Socket(serverIP, serverPort);
               in = new DataInputStream(ClientSocket.getInputStream());    // aponta o duto de entrada para o socket do cliente
-              out = new PrintStream(ClientSocket.getOutputStream());  
-              System.out.println(in.readLine());
-              System.out.println("Conectado. Digite (\"bye\" para sair)");
+              out = new PrintStream(ClientSocket.getOutputStream());
+              System.out.println("Conectado ao Servidor");
             while (true) {
                 System.out.println("\nOperações Disponíveis:");
-                System.out.println("	cadastrarUsuario");
-                System.out.println("	Login");
-                System.out.println("	atualizarUsuario");
-                System.out.println("	consultarUsuario");
-                System.out.println("	deletarUsuario");
-                System.out.println("	Logout");
-                System.out.println("	BYE");
-                System.out.println("Digite uma das operações: ");
+                System.out.println("1 -	cadastrarUsuario");
+                System.out.println("2 -	Login");
+                System.out.println("3 -	atualizarUsuario");
+                System.out.println("4 -	consultarUsuario");
+                System.out.println("5 -	deletarUsuario");
+                System.out.println("6 - 	Logout");
+                System.out.println("7 -	BYE");
+                System.out.println("Escolha uma das operações: ");
 
                 String opcao = teclado.readLine();
 
@@ -50,7 +49,7 @@ public class ClienteTCP {
 
                 switch (opcao.toLowerCase()) {
 
-                    case "cadastrarusuario": // CADASTRAR
+                    case "1": // CADASTRAR
                         msg.op = "cadastrarUsuario";
 
                         System.out.print("Nome: ");
@@ -63,8 +62,8 @@ public class ClienteTCP {
                         msg.senha = teclado.readLine();
                         break;
 
-                    case "login": // LOGIN
-                        msg.op = "LOGIN";
+                    case "2": // LOGIN
+                        msg.op = "login";
 
                         System.out.print("Usuario: ");
                         msg.usuario = teclado.readLine();
@@ -73,7 +72,7 @@ public class ClienteTCP {
                         msg.senha = teclado.readLine();
                         break;
                         
-                    case "atualizarusuario":
+                    case "3":
                     	msg.op="atualizarUsuario";
                     	 System.out.print("Atualizar Nome: ");
                     	 msg.nome = teclado.readLine();
@@ -82,22 +81,22 @@ public class ClienteTCP {
                     	 msg.token = token;
                     	 break;
 
-                    case "consultarusuario": // VER
+                    case "4": // VER
                         msg.op= "consultarUsuario";
                         msg.token = token;
                         break;
 
-                    case "deletarusuario": // DELETAR
+                    case "5": // DELETAR
                         msg.op = "deletarUsuario";   
                         msg.token = token;
                         break;
 
-                    case "logout": // SAIR
+                    case "6": // SAIR
                         msg.op = "logout";
                         msg.token = token;
                         break;
-                    case "bye":
-                    	msg.op = "bye";
+                    case "7":
+                    	 ClientSocket.close();
                     	break;
 
                     default:
@@ -108,28 +107,25 @@ public class ClienteTCP {
                 // envia JSON
                 String json = mapper.writeValueAsString(msg);
                 out.println(json);
+                System.out.println("ENVIADO: "+json);
 
                 // recebe resposta
                 String respostaJson = in.readLine();
-                Mensagem resposta = mapper.readValue(respostaJson, Mensagem.class);
+                System.out.println("RECEBIDO: "+respostaJson);
+                Mensagem respServer = mapper.readValue(respostaJson, Mensagem.class);
                 
-                if ("LOGIN".equalsIgnoreCase(msg.op) && resposta.status == 200) {
-                    token = resposta.token;
-                }
-                if ("LOGOUT".equalsIgnoreCase(msg.op) && resposta.status == 200) {
+              
+              /*  if ("logout".equalsIgnoreCase(msg.op) && respServer.resposta == "200") {
                     token = null;
-                }
-                System.out.println("Resposta: " + resposta.status + "\nMensagem: "+ resposta.mensagem);
-                if("CONSULTARUSUARIO".equalsIgnoreCase(msg.op) && resposta.status == 200) {
-                	System.out.println("Nome Retornado: "+ resposta.nome+"\nUsuario Retornado: "+resposta.usuario);
-                }
+                }*/
                 
-                if ("BYE".equalsIgnoreCase(msg.op) && resposta.status == 200) {
-                    break;
+                System.out.println("Resposta: " + respServer.resposta + "\nMensagem: "+ respServer.mensagem);
+                if("CONSULTARUSUARIO".equalsIgnoreCase(msg.op) && respServer.resposta == "200") {
+                	System.out.println("Nome Retornado: "+ respServer.nome+"\nUsuario Retornado: "+respServer.usuario);
                 }
             }
 
-            ClientSocket.close();
+           
 
         } catch (UnknownHostException e) {
             System.err.println("Host desconhecido: ");

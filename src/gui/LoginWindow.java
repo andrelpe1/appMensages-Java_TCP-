@@ -86,23 +86,37 @@ public class LoginWindow extends JFrame {
 		try {
 			json = mapper.writeValueAsString(msg);
 			out.println(json);
+			 System.out.println("ENVIADO: "+json);
 		} catch (JsonProcessingException e) {
 			JOptionPane.showMessageDialog(null,"Erro ao criar JSON", e.getMessage(), JOptionPane.ERROR_MESSAGE);
 		}
 		
 		try {
-			String respostaJson = in.readLine();;
+			String respostaJson = in.readLine();
+			   System.out.println("RECEBIDO: "+respostaJson);
 			Mensagem resposta = mapper.readValue(respostaJson, Mensagem.class);
-			if(resposta.status == 200) {
-				JOptionPane.showMessageDialog(null,resposta.mensagem,String.valueOf(resposta.status) ,JOptionPane.INFORMATION_MESSAGE);
+			if("200".equals(resposta.resposta)) {
+				JOptionPane.showMessageDialog(null,resposta.mensagem,String.valueOf(resposta.resposta) ,JOptionPane.INFORMATION_MESSAGE);
 				return resposta.token;
+				
 			}else {
-				JOptionPane.showMessageDialog(null,resposta.mensagem,String.valueOf(resposta.status) ,JOptionPane.ERROR_MESSAGE);
+				JOptionPane.showMessageDialog(null,resposta.mensagem,String.valueOf(resposta.resposta) ,JOptionPane.ERROR_MESSAGE);
 			}
 		} catch (IOException e) {
-			JOptionPane.showMessageDialog(null,"Erro ao criar JSON", e.getMessage(), JOptionPane.ERROR_MESSAGE);
+		    JOptionPane.showMessageDialog(null, "Conexão com servidor perdida!", "Erro", JOptionPane.ERROR_MESSAGE);
+		    fecharConexao();
 		}
+	
 		return null;
+	}
+	
+	private void fecharConexao() {
+		try {
+			ClientSocket.close();
+			dispose();
+		} catch (IOException e1) {
+			JOptionPane.showMessageDialog(null,"Erro ao fechar conexão", e1.getMessage(), JOptionPane.ERROR_MESSAGE);
+		}
 	}
 
 	/**
@@ -145,7 +159,11 @@ public class LoginWindow extends JFrame {
 		JButton btnNewButton = new JButton("Logar");
 		btnNewButton.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				 opcoesWindow.setToken(enviarParaServidor(ClientSocket, in, out));  
+			//	 opcoesWindow.setToken(enviarParaServidor(ClientSocket, in, out));  
+				 if(enviarParaServidor(ClientSocket, in, out) != null) {
+					 dispose();
+				 };  
+				 
 			}
 		});
 		btnNewButton.setBounds(139, 232, 85, 21);

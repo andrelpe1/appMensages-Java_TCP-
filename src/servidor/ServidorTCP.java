@@ -15,7 +15,7 @@ public class ServidorTCP {
 
         ServerSocket server;
         Socket clientSocket;
-
+        String token = null;
         UsuarioService service = new UsuarioService();
         ObjectMapper mapper = new ObjectMapper();
 
@@ -40,15 +40,15 @@ public class ServidorTCP {
                 );
 
 
-                out.println("Conectado ao servidor");
+                //out.println("Conectado ao servidor");
                 
                 System.out.println("Cliente conectado!");
                 while (true) {
-                    String json = in.readLine();
+                	String json = in.readLine();
                     if (json == null) break;
 
                     System.out.println("Recebido: " + json);
-
+                 
                     Mensagem resposta = new Mensagem();
 
                     try {
@@ -56,23 +56,27 @@ public class ServidorTCP {
                         
                         switch (msg.op.toUpperCase()) {
                             case "CADASTRARUSUARIO":
-                                if (msg.nome == null || msg.usuario == null || msg.senha == null) {
-                                    resposta.status = 400;
+                                if (msg.nome == null || msg.usuario == null || msg.senha.isEmpty()) {
+                                    resposta.resposta = "401";
                                     resposta.mensagem = "Campos obrigatorios nao preenchidos";
+                                  
                                     break;
                                 }
                                 if((!msg.usuario.matches("^[a-zA-Z0-9_]{5,20}$"))) {
-                                	resposta.status = 401;
+                                	resposta.resposta = "401";
+                                	
                                 	resposta.mensagem = "Usuario com nome invalido (espacos, caracteres especiais ou nome com menos ou mais caracteres aceitaveis [5 a 20])";
                                 	break;
                                 }
                                 if(!msg.senha.matches("^\\d{6}$")) {
-                                	resposta.status = 401;
+                                	resposta.resposta = "401";
+                          
                                 	resposta.mensagem = "Senha invalida. Use apenas numeros e exatamente 6 digitos.";
                                 	break;
                                 }
                                 if(service.mostrarUsuario(msg.usuario) != null) {
-                                	resposta.status = 401;
+                                	resposta.resposta = "401";
+                                	 resposta.op = "cadastrarUsuario";
                                 	resposta.mensagem = "Usuario ja cadastrado";
                                 	break;
                                 }
@@ -84,21 +88,24 @@ public class ServidorTCP {
                                 int res = service.cadastrarUsuario(u);
 
                                 if (res == 1) {
-                                    resposta.status = 200;
+                                    resposta.resposta  = "200";
                                     resposta.mensagem = "Cadastrado com sucesso";
+                           
                                 } else {
-                                    resposta.status = 401;
+                                    resposta.resposta  = "401";
                                     resposta.mensagem = "Erro Interno ao cadastrar";
+                           
                                 }
                                 break;
                                 
                             case "CONSULTARUSUARIO":
 
-                                String usuarioToken = validarToken(msg.token);
+                                String usuarioToken = validarToken(token);
 
                                 if (usuarioToken == null) {
-                                    resposta.status = 401;
+                                    resposta.resposta  = "401";
                                     resposta.mensagem = "Token invalido";
+                            
                                     break;
                                 }
 
@@ -107,11 +114,13 @@ public class ServidorTCP {
                                 if (retorno != null) {
                                     resposta.nome = retorno.getNome();
                                     resposta.usuario = retorno.getUsuario();
-                                    resposta.status = 200;
+                                    resposta.resposta  = "200";
                                     resposta.mensagem = "Consulta realizada com sucesso";
+                                  
                                 } else {
-                                    resposta.status = 404;
+                                    resposta.resposta  = "404";
                                     resposta.mensagem = "Usuario nao encontrado";
+                                 
                                 }
 
                                 break;
@@ -120,60 +129,71 @@ public class ServidorTCP {
                                 Usuario user = service.login(msg.usuario, msg.senha);
 
                                 if (user != null) {
-                                    resposta.status = 200;
+                                    resposta.resposta  = "200";
                                     resposta.mensagem = "Login realizado com sucesso";
-                                    resposta.token = "usr_"+user.getUsuario(); 
+                                    resposta.token = "usr_"+user.getUsuario();
+                     
                                 } else {
-                                    resposta.status = 401;
+                                    resposta.resposta  = "401";
                                     resposta.mensagem = "Usuario ou senha invalidos";
+                             
                                 }
                                 break;
                                 
                             case "LOGOUT":
 
-                            	 String usuarioLogout = validarToken(msg.token);
+                            	 String usuarioLogout = validarToken(token);
                             	 if (usuarioLogout != null) {
-                            	        resposta.status = 200;
+                            	        resposta.resposta  = "200";
                             	        resposta.mensagem = "Logout efetuado";
+                            	        //token = null;
+                            	    
                             	    } else {
-                            	        resposta.status = 401;
+                            	        resposta.resposta = "401";
                             	        resposta.mensagem = "Erro ao efetuar logout";
+                            	       
                             	    }
                                 break;
 
                             case "DELETARUSUARIO":
-                            	String deletarToken = validarToken(msg.token);	
+                            	String deletarToken = validarToken(token);	
                             	 if (deletarToken == null) {
-                            	        resposta.status = 401;
+                            	        resposta.resposta  = "401";
                             	        resposta.mensagem = "Token invalido";
+                            	  
                             	        break;
                             	    }
                                 int del = service.deletarUsuario(deletarToken);
 
                                 if (del == 1) {
-                                    resposta.status = 200;
+                                    resposta.resposta = "200";
                                     resposta.mensagem = "Usuario deletado";
+                                  
                                 } else {
-                                    resposta.status = 404;
+                                    resposta.resposta = "404";
                                     resposta.mensagem = "Usuario não encontrado";
+                                  
                                 }
                                 break;
                                 
                             case "ATUALIZARUSUARIO":
-                            	String atualizarToken = validarToken(msg.token);
+                            	String atualizarToken = validarToken(token);
                             	if (atualizarToken == null) {
-                        	        resposta.status = 401;
+                        	        resposta.resposta  = "401";
                         	        resposta.mensagem = "Token invalido";
+                        	     
                         	        break;
                         	    }
-                            	if (msg.nome == null || msg.senha == null || msg.nome == "") {
-                                    resposta.status = 401;
+                            	if (msg.nome == null || msg.senha == null || msg.nome.isBlank()) {
+                                    resposta.resposta  = "401";
                                     resposta.mensagem = "Campos obrigatorios nao preenchidos";
+                           
                                     break;
                                 }
                             	 if(!msg.senha.matches("^\\d{6}$")) {
-                                 	resposta.status = 401;
+                                 	resposta.resposta = "401";
                                  	resposta.mensagem = "Senha invalida. Use apenas numeros e exatamente 6 digitos.";
+                                
                                  	break;
                                  }
                                 Usuario update = new Usuario();
@@ -182,42 +202,40 @@ public class ServidorTCP {
                                 update.setSenha(msg.senha);
                             	int upd = service.atualizarUsuario(update);
                             	  if (upd == 1) {
-                                      resposta.status = 200;
+                                      resposta.resposta  = "200";
                                       resposta.mensagem = "Atualizado com sucesso";
+                                  
                                   } else {
-                                      resposta.status = 401;
+                                      resposta.resposta  = "401";
                                       resposta.mensagem = "Erro Interno ao atualizar";
+                                    
                                   }	
                             	break;
 
 
-                            case "BYE":
-                                resposta.status = 200;
-                                resposta.mensagem = "Conexão encerrada";
-                                resposta.op = "BYE_RESPOSTA";
-
-                                out.println(mapper.writeValueAsString(resposta));
-                                clientSocket.close();
-                                break;
 
                             default:
-                                resposta.status = 400;
+                                resposta.resposta = "400";
                                 resposta.mensagem = "Comando inválido";
                         }
+                        System.out.println("Enviado: " + mapper.writeValueAsString(resposta));
 
-                        if (!"BYE".equalsIgnoreCase(msg.op)) {
-                            resposta.op = msg.op + "_RESPOSTA";
+           
                             out.println(mapper.writeValueAsString(resposta));
-                        } else {
-                            break;
+                        if ("login".equalsIgnoreCase(msg.op) && resposta.resposta == "200") {
+                            token = resposta.token;
+                        }
+                        if ("logout".equalsIgnoreCase(msg.op) && resposta.resposta == "200") {
+                            token = null;
                         }
 
                     } catch (Exception e) {
-                        resposta.status = 400;
+                        resposta.resposta  = "400";
                         resposta.mensagem = e.getMessage();
                         resposta.op = "ERRO";
 
                         out.println(mapper.writeValueAsString(resposta));
+                        
                     }
                 }
 
@@ -225,6 +243,7 @@ public class ServidorTCP {
                 System.out.println("Erro: " + e.getMessage());
             }
         }
+        
     }
     
     

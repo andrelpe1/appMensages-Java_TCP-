@@ -38,7 +38,7 @@ public class AtualizarUsuarioWindow extends JFrame {
 	private static Socket ClientSocket = null;
 	static DataInputStream in;                  // cria um duto de entrada
     static PrintStream out; 
-    private static String token = null;
+  //  private static String token = null;
 	/**
 	 * Launch the application.
 	 */
@@ -46,7 +46,7 @@ public class AtualizarUsuarioWindow extends JFrame {
 		EventQueue.invokeLater(new Runnable() {
 			public void run() {
 				try {
-					AtualizarUsuarioWindow frame = new AtualizarUsuarioWindow(opcoesWindow,ClientSocket,in,out,token);
+					AtualizarUsuarioWindow frame = new AtualizarUsuarioWindow(opcoesWindow,ClientSocket,in,out);
 					frame.setVisible(true);
 				} catch (Exception e) {
 					e.printStackTrace();
@@ -62,7 +62,7 @@ public class AtualizarUsuarioWindow extends JFrame {
 		  }
 	}
 
-	public AtualizarUsuarioWindow(OpcoesWindow opcoesWindow,Socket ClientSocket,DataInputStream in,PrintStream out,String token) {
+	public AtualizarUsuarioWindow(OpcoesWindow opcoesWindow,Socket ClientSocket,DataInputStream in,PrintStream out) {
 		
 		this.opcoesWindow = opcoesWindow;
 		getContentPane().setLayout(null);
@@ -72,41 +72,56 @@ public class AtualizarUsuarioWindow extends JFrame {
 				fecharJanela();
 			}
 		});
-		iniciarComponentes(ClientSocket, in, out,token);
+		iniciarComponentes(ClientSocket, in, out);
 	}
 	
-	private void enviarParaServidor(Socket ClientSocket,DataInputStream in,PrintStream out,String token) {
+	private boolean enviarParaServidor(Socket ClientSocket,DataInputStream in,PrintStream out) {
 		ObjectMapper mapper = new ObjectMapper();
 		 Mensagem msg = new Mensagem();
 		 msg.op = "atualizarUsuario";
 		 msg.nome = nomeTXT.getText();
 		 msg.senha = senhaTXT.getText();
-		 msg.token = token;
+		// msg.token = token;
 		 String json;
 		try {
 			json = mapper.writeValueAsString(msg);
 			out.println(json);
+			 System.out.println("ENVIADO: "+json);
 		} catch (JsonProcessingException e) {
 			JOptionPane.showMessageDialog(null,"Erro ao criar JSON", e.getMessage(), JOptionPane.ERROR_MESSAGE);
 		}
 		
 		try {
-			String respostaJson = in.readLine();;
+			String respostaJson = in.readLine();
+			   System.out.println("RECEBIDO: "+respostaJson);
 			Mensagem resposta = mapper.readValue(respostaJson, Mensagem.class);
-			if(resposta.status == 200) {
-				JOptionPane.showMessageDialog(null,resposta.mensagem,String.valueOf(resposta.status) ,JOptionPane.INFORMATION_MESSAGE);
+			if("200".equals(resposta.resposta)) {
+				JOptionPane.showMessageDialog(null,resposta.mensagem,String.valueOf(resposta.resposta) ,JOptionPane.INFORMATION_MESSAGE);
+				return true;
 			}else {
-				JOptionPane.showMessageDialog(null,resposta.mensagem,String.valueOf(resposta.status) ,JOptionPane.ERROR_MESSAGE);
+				JOptionPane.showMessageDialog(null,resposta.mensagem,String.valueOf(resposta.resposta) ,JOptionPane.ERROR_MESSAGE);
 			}
 		} catch (IOException e) {
-			JOptionPane.showMessageDialog(null,"Erro ao criar JSON", e.getMessage(), JOptionPane.ERROR_MESSAGE);
+		    JOptionPane.showMessageDialog(null, "Conexão com servidor perdida!", "Erro", JOptionPane.ERROR_MESSAGE);
+		    fecharConexao();
+		}
+	
+		return false;
+	}
+	
+	private void fecharConexao() {
+		try {
+			ClientSocket.close();
+			dispose();
+		} catch (IOException e1) {
+			JOptionPane.showMessageDialog(null,"Erro ao fechar conexão", e1.getMessage(), JOptionPane.ERROR_MESSAGE);
 		}
 	}
 	
 	/**
 	 * Create the frame.
 	 */
-	public void iniciarComponentes(Socket ClientSocket,DataInputStream in,PrintStream out,String token) {
+	public void iniciarComponentes(Socket ClientSocket,DataInputStream in,PrintStream out) {
 		setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 		setBounds(100, 100, 505, 266);
 		contentPane = new JPanel();
@@ -145,7 +160,9 @@ public class AtualizarUsuarioWindow extends JFrame {
 		JButton btnAtualizar = new JButton("ATUALIZAR");
 		btnAtualizar.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				enviarParaServidor(ClientSocket,in,out,token);
+				if(enviarParaServidor(ClientSocket,in,out)) {
+					dispose();
+				};
 			}
 		});
 		btnAtualizar.setBounds(167, 159, 127, 29);

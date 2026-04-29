@@ -7,7 +7,7 @@ public class Mensagem {
 	  public String usuario;
 	  public String senha;
 	  
-	  public int status;
+	  public String resposta;
 	  public String mensagem;
 	  public String token;
 }
