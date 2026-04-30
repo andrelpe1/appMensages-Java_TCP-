@@ -23,16 +23,21 @@ import java.awt.event.ActionEvent;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import javax.swing.JTextArea;
+import javax.swing.JScrollPane;
+import java.awt.Font;
 public class OpcoesWindow extends JFrame {
 
 	private static final long serialVersionUID = 1L;
 	private JPanel contentPane;
 	private static  ConexaoWindow conexaoWindow;
 	private static Socket ClientSocket = null;
-	//private String token = null;
+	private JTextArea serverTXT;
+	private JTextArea clienteTXT;
 
 	static DataInputStream in;                  // cria um duto de entrada
     static PrintStream out; 
+    private String token = null;
 	/**
 	 * Launch the application.
 	 */
@@ -56,9 +61,10 @@ public class OpcoesWindow extends JFrame {
 		  }
 	}
 	
-	/*public void setToken(String token) {
+	public void setToken(String token) {
 	    this.token = token;
-	}*/
+	}
+	
 	public OpcoesWindow(ConexaoWindow conexaoWindow,Socket ClientSocket,DataInputStream in,PrintStream out) {
 		
 		this.conexaoWindow = conexaoWindow;
@@ -79,9 +85,8 @@ public class OpcoesWindow extends JFrame {
 		this.setVisible(false);
 	}
 	
-	private void abrirAtualizarUsuario(Socket ClientSocket,DataInputStream in,PrintStream out)
-	{
-		AtualizarUsuarioWindow janelaAtualizar = new AtualizarUsuarioWindow(this,ClientSocket,in,out);
+	private void abrirAtualizarUsuario(Socket ClientSocket,DataInputStream in,PrintStream out,String token) {
+		AtualizarUsuarioWindow janelaAtualizar = new AtualizarUsuarioWindow(this,ClientSocket,in,out,token);
 		janelaAtualizar.setVisible(true);
 		this.setVisible(false);
 	}
@@ -98,16 +103,17 @@ public class OpcoesWindow extends JFrame {
 		this.setVisible(false);
 	}
 	
-	private void enviarParaServidorConsultar(Socket ClientSocket,DataInputStream in,PrintStream out) {
+	private void enviarParaServidorConsultar(Socket ClientSocket,DataInputStream in,PrintStream out,String token) {
 		ObjectMapper mapper = new ObjectMapper();
 		 Mensagem msg = new Mensagem();
 		 msg.op = "consultarUsuario";
-		 //msg.token = token;
+		 msg.token = token;
 		 String json;
 		try {
 			json = mapper.writeValueAsString(msg);
 			out.println(json);
 			 System.out.println("ENVIADO: "+json);
+			clienteTXT.setText(json);
 		} catch (JsonProcessingException e) {
 			JOptionPane.showMessageDialog(null,"Erro ao criar JSON", e.getMessage(), JOptionPane.ERROR_MESSAGE);
 		}
@@ -115,6 +121,7 @@ public class OpcoesWindow extends JFrame {
 		try {
 			String respostaJson = in.readLine();;
 			   System.out.println("RECEBIDO: "+respostaJson);
+			   serverTXT.setText(respostaJson);
 			Mensagem resposta = mapper.readValue(respostaJson, Mensagem.class);
 			if("200".equals(resposta.resposta)) {
 				JOptionPane.showMessageDialog(null,resposta.mensagem,String.valueOf(resposta.resposta) ,JOptionPane.INFORMATION_MESSAGE);
@@ -128,16 +135,17 @@ public class OpcoesWindow extends JFrame {
 		}
 	}
 	
-	private void enviarParaServidorDeletar(Socket ClientSocket,DataInputStream in,PrintStream out) {
+	private void enviarParaServidorDeletar(Socket ClientSocket,DataInputStream in,PrintStream out,String token) {
 		ObjectMapper mapper = new ObjectMapper();
 		 Mensagem msg = new Mensagem();
 		 msg.op = "deletarUsuario";
-		// msg.token = token;
+		 msg.token = token;
 		 String json;
 		try {
 			json = mapper.writeValueAsString(msg);
 			out.println(json);
 			 System.out.println("ENVIADO: "+json);
+			 clienteTXT.setText(json);
 		} catch (JsonProcessingException e) {
 			JOptionPane.showMessageDialog(null,"Erro ao criar JSON", e.getMessage(), JOptionPane.ERROR_MESSAGE);
 		}
@@ -145,9 +153,11 @@ public class OpcoesWindow extends JFrame {
 		try {
 			String respostaJson = in.readLine();
 			   System.out.println("RECEBIDO: "+respostaJson);
+			   serverTXT.setText(respostaJson);
 			Mensagem resposta = mapper.readValue(respostaJson, Mensagem.class);
 			if("200".equals(resposta.resposta)) {
 				JOptionPane.showMessageDialog(null,resposta.mensagem,String.valueOf(resposta.resposta) ,JOptionPane.INFORMATION_MESSAGE);
+				setToken(null);
 			}else {
 				JOptionPane.showMessageDialog(null,resposta.mensagem,String.valueOf(resposta.resposta) ,JOptionPane.ERROR_MESSAGE);
 			}
@@ -157,16 +167,17 @@ public class OpcoesWindow extends JFrame {
 		}
 	}
 	
-	private void enviarParaServidorLogout(Socket ClientSocket,DataInputStream in,PrintStream out) {
+	private void enviarParaServidorLogout(Socket ClientSocket,DataInputStream in,PrintStream out,String token) {
 		ObjectMapper mapper = new ObjectMapper();
 		 Mensagem msg = new Mensagem();
 		 msg.op = "logout";
-		// msg.token = token;
+		 msg.token = token;
 		 String json;
 		try {
 			json = mapper.writeValueAsString(msg);
 			out.println(json);
 			 System.out.println("ENVIADO: "+json);
+			 clienteTXT.setText(json);
 		} catch (JsonProcessingException e) {
 			JOptionPane.showMessageDialog(null,"Erro ao criar JSON", e.getMessage(), JOptionPane.ERROR_MESSAGE);
 		}
@@ -174,9 +185,10 @@ public class OpcoesWindow extends JFrame {
 		try {
 			String respostaJson = in.readLine();
 			   System.out.println("RECEBIDO: "+respostaJson);
+			   serverTXT.setText(respostaJson);
 			Mensagem resposta = mapper.readValue(respostaJson, Mensagem.class);
 			if("200".equals(resposta.resposta)) {
-				 //setToken(null);
+				 setToken(null);
 				JOptionPane.showMessageDialog(null,resposta.mensagem,String.valueOf(resposta.resposta) ,JOptionPane.INFORMATION_MESSAGE);
 			}else {
 				JOptionPane.showMessageDialog(null,resposta.mensagem,String.valueOf(resposta.resposta) ,JOptionPane.ERROR_MESSAGE);
@@ -204,7 +216,7 @@ public class OpcoesWindow extends JFrame {
 	 */
 	public void iniciarComponenetes(Socket ClientSocket,DataInputStream in,PrintStream out) {
 		setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-		setBounds(100, 100, 400, 363);
+		setBounds(100, 100, 400, 614);
 		contentPane = new JPanel();
 		contentPane.setBorder(new EmptyBorder(5, 5, 5, 5));
 
@@ -236,7 +248,7 @@ public class OpcoesWindow extends JFrame {
 		JButton btnAtualizarUsuario = new JButton("Atualizar Usuario");
 		btnAtualizarUsuario.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				abrirAtualizarUsuario(ClientSocket,in,out);
+				abrirAtualizarUsuario(ClientSocket,in,out,token);
 			}
 		});
 		btnAtualizarUsuario.setBounds(24, 121, 158, 37);
@@ -245,7 +257,7 @@ public class OpcoesWindow extends JFrame {
 		JButton btnConsultarUsuario = new JButton("Consultar Usuario");
 		btnConsultarUsuario.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				enviarParaServidorConsultar(ClientSocket, in, out);
+				enviarParaServidorConsultar(ClientSocket, in, out,token);
 			
 			}
 		});
@@ -257,7 +269,7 @@ public class OpcoesWindow extends JFrame {
 			public void actionPerformed(ActionEvent e) {
 				int resposta = JOptionPane.showConfirmDialog(null,"Deseja mesmo deletar seu usuario?","DELETAR USUARIO?" ,JOptionPane.YES_NO_OPTION);
 				if (resposta == JOptionPane.YES_OPTION) {		   
-					enviarParaServidorDeletar( ClientSocket,in, out);
+					enviarParaServidorDeletar( ClientSocket,in, out,token);
 				} 
 			}
 		});
@@ -269,7 +281,7 @@ public class OpcoesWindow extends JFrame {
 			public void actionPerformed(ActionEvent e) {
 				int resposta = JOptionPane.showConfirmDialog(null,"Deseja mesmo deslogar?","LOGOUT" ,JOptionPane.YES_NO_OPTION);
 				if (resposta == JOptionPane.YES_OPTION) {		   
-					enviarParaServidorLogout( ClientSocket,in, out);
+					enviarParaServidorLogout( ClientSocket,in, out,token);
 				} 
 			}
 		});
@@ -290,6 +302,27 @@ public class OpcoesWindow extends JFrame {
 		});
 		btnFecharConexao.setBounds(75, 273, 211, 43);
 		contentPane.add(btnFecharConexao);
+		
+		JScrollPane scrollPane = new JScrollPane();
+		scrollPane.setBounds(32, 363, 346, 72);
+		contentPane.add(scrollPane);
+		
+		 clienteTXT = new JTextArea();
+		 clienteTXT.setFont(new Font("Monospaced", Font.PLAIN, 14));
+		 scrollPane.setViewportView(clienteTXT);
+		 
+		 JLabel lblNewLabel_1 = new JLabel("Cliente enviou:");
+		 scrollPane.setColumnHeaderView(lblNewLabel_1);
+		 
+		 JScrollPane scrollPane_1 = new JScrollPane();
+		 scrollPane_1.setBounds(32, 464, 344, 80);
+		 contentPane.add(scrollPane_1);
+		 
+		  serverTXT = new JTextArea();
+		  serverTXT.setFont(new Font("Monospaced", Font.PLAIN, 14));
+		  scrollPane_1.setViewportView(serverTXT);
+		  
+		  JLabel lblNewLabel_1_1 = new JLabel("Servidor retornou");
+		  scrollPane_1.setColumnHeaderView(lblNewLabel_1_1);
 	}
-
 }

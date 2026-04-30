@@ -26,6 +26,8 @@ import javax.swing.JTextField;
 import javax.swing.JButton;
 import java.awt.event.ActionListener;
 import java.awt.event.ActionEvent;
+import javax.swing.JScrollPane;
+import javax.swing.JTextArea;
 
 public class LoginWindow extends JFrame {
 
@@ -37,6 +39,8 @@ public class LoginWindow extends JFrame {
 	private static Socket ClientSocket = null;
 	static DataInputStream in;                  // cria um duto de entrada
     static PrintStream out; 
+    private JTextArea serverTXT;
+	private JTextArea clienteTXT;
 	/**
 	 * Launch the application.
 	 */
@@ -87,6 +91,7 @@ public class LoginWindow extends JFrame {
 			json = mapper.writeValueAsString(msg);
 			out.println(json);
 			 System.out.println("ENVIADO: "+json);
+			 clienteTXT.setText(json);
 		} catch (JsonProcessingException e) {
 			JOptionPane.showMessageDialog(null,"Erro ao criar JSON", e.getMessage(), JOptionPane.ERROR_MESSAGE);
 		}
@@ -94,9 +99,11 @@ public class LoginWindow extends JFrame {
 		try {
 			String respostaJson = in.readLine();
 			   System.out.println("RECEBIDO: "+respostaJson);
+			   serverTXT.setText(respostaJson);
 			Mensagem resposta = mapper.readValue(respostaJson, Mensagem.class);
 			if("200".equals(resposta.resposta)) {
 				JOptionPane.showMessageDialog(null,resposta.mensagem,String.valueOf(resposta.resposta) ,JOptionPane.INFORMATION_MESSAGE);
+				//dispose();
 				return resposta.token;
 				
 			}else {
@@ -124,7 +131,7 @@ public class LoginWindow extends JFrame {
 	 */
 	public void iniciarComponentes(OpcoesWindow opcoesWindow,Socket ClientSocket,DataInputStream in,PrintStream out) {
 		setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-		setBounds(100, 100, 391, 298);
+		setBounds(100, 100, 371, 479);
 		contentPane = new JPanel();
 		contentPane.setBorder(new EmptyBorder(5, 5, 5, 5));
 
@@ -159,15 +166,33 @@ public class LoginWindow extends JFrame {
 		JButton btnNewButton = new JButton("Logar");
 		btnNewButton.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-			//	 opcoesWindow.setToken(enviarParaServidor(ClientSocket, in, out));  
-				 if(enviarParaServidor(ClientSocket, in, out) != null) {
-					 dispose();
-				 };  
-				 
+			 opcoesWindow.setToken(enviarParaServidor(ClientSocket, in, out));  
 			}
 		});
-		btnNewButton.setBounds(139, 232, 85, 21);
+		btnNewButton.setBounds(124, 213, 122, 32);
 		contentPane.add(btnNewButton);
+		
+		JScrollPane scrollPane = new JScrollPane();
+		scrollPane.setBounds(10, 274, 346, 72);
+		contentPane.add(scrollPane);
+		
+	clienteTXT = new JTextArea();
+		clienteTXT.setFont(new Font("Monospaced", Font.PLAIN, 14));
+		scrollPane.setViewportView(clienteTXT);
+		
+		JLabel lblNewLabel_1_2 = new JLabel("Cliente enviou:");
+		scrollPane.setColumnHeaderView(lblNewLabel_1_2);
+		
+		JScrollPane scrollPane_1 = new JScrollPane();
+		scrollPane_1.setBounds(10, 362, 344, 80);
+		contentPane.add(scrollPane_1);
+		
+		JLabel lblNewLabel_1_1_1 = new JLabel("Servidor retornou");
+		scrollPane_1.setColumnHeaderView(lblNewLabel_1_1_1);
+		
+		serverTXT = new JTextArea();
+		serverTXT.setFont(new Font("Monospaced", Font.PLAIN, 14));
+		scrollPane_1.setViewportView(serverTXT);
 	}
 
 }

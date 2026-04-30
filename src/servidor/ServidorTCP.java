@@ -100,7 +100,7 @@ public class ServidorTCP {
                                 
                             case "CONSULTARUSUARIO":
 
-                                String usuarioToken = validarToken(token);
+                                String usuarioToken = validarToken(msg.token);
 
                                 if (usuarioToken == null) {
                                     resposta.resposta  = "401";
@@ -142,7 +142,7 @@ public class ServidorTCP {
                                 
                             case "LOGOUT":
 
-                            	 String usuarioLogout = validarToken(token);
+                            	 String usuarioLogout = validarToken(msg.token);
                             	 if (usuarioLogout != null) {
                             	        resposta.resposta  = "200";
                             	        resposta.mensagem = "Logout efetuado";
@@ -156,7 +156,7 @@ public class ServidorTCP {
                                 break;
 
                             case "DELETARUSUARIO":
-                            	String deletarToken = validarToken(token);	
+                            	String deletarToken = validarToken(msg.token);	
                             	 if (deletarToken == null) {
                             	        resposta.resposta  = "401";
                             	        resposta.mensagem = "Token invalido";
@@ -177,7 +177,7 @@ public class ServidorTCP {
                                 break;
                                 
                             case "ATUALIZARUSUARIO":
-                            	String atualizarToken = validarToken(token);
+                            	String atualizarToken = validarToken(msg.token);
                             	if (atualizarToken == null) {
                         	        resposta.resposta  = "401";
                         	        resposta.mensagem = "Token invalido";
@@ -222,12 +222,12 @@ public class ServidorTCP {
 
            
                             out.println(mapper.writeValueAsString(resposta));
-                        if ("login".equalsIgnoreCase(msg.op) && resposta.resposta == "200") {
+                       /* if ("login".equalsIgnoreCase(msg.op) && resposta.resposta == "200") {
                             token = resposta.token;
                         }
                         if ("logout".equalsIgnoreCase(msg.op) && resposta.resposta == "200") {
                             token = null;
-                        }
+                        }*/
 
                     } catch (Exception e) {
                         resposta.resposta  = "400";
