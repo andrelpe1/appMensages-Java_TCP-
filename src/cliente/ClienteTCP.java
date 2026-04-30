@@ -115,12 +115,19 @@ public class ClienteTCP {
                 Mensagem respServer = mapper.readValue(respostaJson, Mensagem.class);
                 
               
-              /*  if ("logout".equalsIgnoreCase(msg.op) && respServer.resposta == "200") {
+                if ("login".equalsIgnoreCase(msg.op) && "200".equals(respServer.resposta)) {
+                
+                    token = respServer.token;
+     
+                }
+                if ("logout".equalsIgnoreCase(msg.op) && "200".equals(respServer.resposta) ){
                     token = null;
-                }*/
+                    System.out.println(token);
+                }
+                
                 
                 System.out.println("Resposta: " + respServer.resposta + "\nMensagem: "+ respServer.mensagem);
-                if("CONSULTARUSUARIO".equalsIgnoreCase(msg.op) && respServer.resposta == "200") {
+                if("CONSULTARUSUARIO".equalsIgnoreCase(msg.op) && "200".equals(respServer.resposta)) {
                 	System.out.println("Nome Retornado: "+ respServer.nome+"\nUsuario Retornado: "+respServer.usuario);
                 }
             }
