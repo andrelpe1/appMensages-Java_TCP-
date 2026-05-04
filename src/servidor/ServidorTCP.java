@@ -18,7 +18,7 @@ public class ServidorTCP {
         String token = null;
         UsuarioService service = new UsuarioService();
         ObjectMapper mapper = new ObjectMapper();
-
+        boolean logado = false;
         System.out.println("Qual porta o servidor deve usar? ");
         BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
         int porta = Integer.parseInt(br.readLine());
@@ -102,7 +102,7 @@ public class ServidorTCP {
 
                                 String usuarioToken = validarToken(msg.token);
 
-                                if (usuarioToken == null) {
+                                if (usuarioToken == null || !logado) {
                                     resposta.resposta  = "401";
                                     resposta.mensagem = "Token invalido";
                             
@@ -111,7 +111,7 @@ public class ServidorTCP {
 
                                 Usuario retorno = service.mostrarUsuario(usuarioToken);
 
-                                if (retorno != null) {
+                                if (retorno != null && logado) {
                                     resposta.nome = retorno.getNome();
                                     resposta.usuario = retorno.getUsuario();
                                     resposta.resposta  = "200";
@@ -127,11 +127,12 @@ public class ServidorTCP {
                             	
                             case "LOGIN":
                                 Usuario user = service.login(msg.usuario, msg.senha);
-
+                                
                                 if (user != null) {
                                     resposta.resposta  = "200";
                                     resposta.mensagem = "Login realizado com sucesso";
                                     resposta.token = "usr_"+user.getUsuario();
+                                    logado = true;
                      
                                 } else {
                                     resposta.resposta  = "401";
@@ -147,6 +148,7 @@ public class ServidorTCP {
                             	        resposta.resposta  = "200";
                             	        resposta.mensagem = "Logout efetuado";
                             	        //token = null;
+                            	        logado = false;
                             	    
                             	    } else {
                             	        resposta.resposta = "401";
@@ -157,7 +159,7 @@ public class ServidorTCP {
 
                             case "DELETARUSUARIO":
                             	String deletarToken = validarToken(msg.token);	
-                            	 if (deletarToken == null) {
+                            	 if ((deletarToken == null) || (!logado)) {
                             	        resposta.resposta  = "401";
                             	        resposta.mensagem = "Token invalido";
                             	  
@@ -165,7 +167,7 @@ public class ServidorTCP {
                             	    }
                                 int del = service.deletarUsuario(deletarToken);
 
-                                if (del == 1) {
+                                if (del == 1 && logado) {
                                     resposta.resposta = "200";
                                     resposta.mensagem = "Usuario deletado";
                                   
@@ -178,7 +180,7 @@ public class ServidorTCP {
                                 
                             case "ATUALIZARUSUARIO":
                             	String atualizarToken = validarToken(msg.token);
-                            	if (atualizarToken == null) {
+                            	if ((atualizarToken == null) || (!logado)) {
                         	        resposta.resposta  = "401";
                         	        resposta.mensagem = "Token invalido";
                         	     
@@ -201,7 +203,7 @@ public class ServidorTCP {
                                 update.setUsuario(atualizarToken);
                                 update.setSenha(msg.senha);
                             	int upd = service.atualizarUsuario(update);
-                            	  if (upd == 1) {
+                            	  if (upd == 1 && logado) {
                                       resposta.resposta  = "200";
                                       resposta.mensagem = "Atualizado com sucesso";
                                   
