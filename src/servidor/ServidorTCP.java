@@ -2,6 +2,8 @@ package servidor;
 
 import java.io.*;
 import java.net.*;
+import java.sql.SQLException;
+import java.util.List;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -22,7 +24,7 @@ public class ServidorTCP {
         System.out.println("Qual porta o servidor deve usar? ");
         BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
         int porta = Integer.parseInt(br.readLine());
-
+        criarAdmin(service);
         server = new ServerSocket(porta);
         System.out.println("Servidor carregado na porta " + porta);
 
@@ -131,7 +133,11 @@ public class ServidorTCP {
                                 if (user != null) {
                                     resposta.resposta  = "200";
                                     resposta.mensagem = "Login realizado com sucesso";
-                                    resposta.token = "usr_"+user.getUsuario();
+                                    if (user.getUsuario().equals("adm")) {
+                                        resposta.token_admin = "adm";
+                                    } else {
+                                        resposta.token = "usr_" + user.getUsuario();
+                                    }
                                     logado = true;
                      
                                 } else {
@@ -213,8 +219,94 @@ public class ServidorTCP {
                                     
                                   }	
                             	break;
+                            case "CONSULTARUSUARIOSADMIN":
+                            	String adminConsultas = validarToken(msg.token_admin);
+                            	if(adminConsultas == null  && !logado || !adminConsultas.equalsIgnoreCase("adm") && !logado) {
+                            		resposta.resposta  = "401";
+                        	        resposta.mensagem = "Deve ser ADM para consultar a lista";
+                        	        break;
+                            	}
+                            		List<Usuario> usuarios = service.listarUsuarios();
+                            		resposta.resposta = "200";
+                            		resposta.lista_usuarios= usuarios;                         		
+                            		break;                           		
+                            case "CONSULTARUSUARIOADMIN":
+                            	String adminConsulta = validarToken(msg.token_admin);
+                            	if(adminConsulta == null || !adminConsulta.equalsIgnoreCase("adm")) {
+                            		resposta.resposta  = "401";
+                        	        resposta.mensagem = "Token inválido";
+                        	        break;
+                            	}
+                            	Usuario retornoUsu = service.mostrarUsuario(msg.usuario);
 
+                                if (retornoUsu != null && logado) {
+                                    resposta.nome = retornoUsu.getNome();
+                                    resposta.usuario = retornoUsu.getUsuario();
+                                    resposta.resposta  = "200";
+                                    resposta.mensagem = "Consulta realizada com sucesso";
+                                  
+                                } else {
+                                    resposta.resposta  = "404";
+                                    resposta.mensagem = "Usuario nao encontrado";
+                                 
+                                }
+                                break;
+                                
+                            case "ATUALIZARUSUARIOADMIN":
+                            	String adminAtualizar = validarToken(msg.token_admin);
+                            	if(adminAtualizar == null || !adminAtualizar.equalsIgnoreCase("adm")) {
+                            		resposta.resposta  = "401";
+                        	        resposta.mensagem = "Erro ao atualizar o usuario";
+                        	        break;
+                            	}
+                            	if (msg.nome == null || msg.senha == null || msg.nome.isBlank()) {
+                                    resposta.resposta  = "401";
+                                    resposta.mensagem = "Campos obrigatorios nao preenchidos";
+                           
+                                    break;
+                                }
+                            	 if(!msg.senha.matches("^\\d{6}$")) {
+                                 	resposta.resposta = "401";
+                                 	resposta.mensagem = "Senha invalida. Use apenas numeros e exatamente 6 digitos.";
+                                
+                                 	break;
+                                 }
+                                Usuario update1 = new Usuario();
+                                update1.setNome(msg.nome);
+                                update1.setUsuario(msg.usuario);
+                                update1.setSenha(msg.senha);
+                            	int upd1 = service.atualizarUsuario(update1);
+                            	  if (upd1 == 1 && logado) {
+                                      resposta.resposta  = "200";
+                                      resposta.mensagem = "Usuário atualizado com sucesso";
+                                  
+                                  } else {
+                                      resposta.resposta  = "401";
+                                      resposta.mensagem = "Erro Interno ao atualizar";
+                                    
+                                  }	
+                            	break;
+                            case "DELETARUSUARIOADMIN":
+                            	String adminDeletar = validarToken(msg.token_admin);
+                            	if(adminDeletar == null || !adminDeletar.equalsIgnoreCase("adm")) {
+                            		resposta.resposta  = "401";
+                        	        resposta.mensagem = "Deve ser ADM para deletar um usuario";
+                        	        break;
+                            	}
+                            	  int del1 = service.deletarUsuario(msg.usuario);
 
+                                  if (del1 == 1 && logado) {
+                                      resposta.resposta = "200";
+                                      resposta.mensagem = "Usuario deletado";
+                                    
+                                  } else {
+                                      resposta.resposta = "404";
+                                      resposta.mensagem = "Usuario não encontrado";
+                                    
+                                  }
+                                  break;
+
+                            	
 
                             default:
                                 resposta.resposta = "400";
@@ -254,7 +346,7 @@ public class ServidorTCP {
         if (token == null) return null;
 
         if (token.equals("adm")) {
-            return "admin";
+            return "adm";
         }
 
         if (token.startsWith("usr_")) {
@@ -262,5 +354,22 @@ public class ServidorTCP {
         }
 
         return null;
+    }
+    
+    private static void criarAdmin(UsuarioService service) {
+    	try {
+			if (service.mostrarUsuario("adm") == null) {
+
+			    Usuario admin = new Usuario();
+
+			    admin.setNome("Administrador");
+			    admin.setUsuario("adm");
+			    admin.setSenha("123456");
+		
+			    service.cadastrarUsuario(admin);		  
+			}
+		} catch (SQLException | IOException e) {
+			 System.out.println("Erro: " + e.getMessage());
+		}
     }
 }

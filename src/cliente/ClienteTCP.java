@@ -40,7 +40,11 @@ public class ClienteTCP {
                 System.out.println("4 -	consultarUsuario");
                 System.out.println("5 -	deletarUsuario");
                 System.out.println("6 - 	Logout");
-                System.out.println("7 -	BYE");
+                System.out.println("7 - consultarUsuariosAdmin");
+                System.out.println("8 - consultarUsuarioAdmin");
+                System.out.println("9 - atualizarUsuarioAdmin");
+                System.out.println("10 - deletarUsuarioAdmin");
+                System.out.println("11 -	BYE");
                 System.out.println("Escolha uma das operações: ");
 
                 String opcao = teclado.readLine();
@@ -96,6 +100,32 @@ public class ClienteTCP {
                         msg.token = token;
                         break;
                     case "7":
+                    	msg.op = "consultarUsuariosAdmin";
+                    	msg.token_admin = token;
+                    	break;
+                    case "8":
+                    	msg.op = "consultarUsuarioAdmin";
+                    	msg.token_admin = token;
+                      	 System.out.print("Digite o username do Usuario que deseja consultar:");
+                    	msg.usuario = teclado.readLine();
+                    	break;
+                    case "9":
+                    	msg.op = "atualizarUsuarioAdmin";
+                    	msg.token_admin = token;
+                      	 System.out.print("Digite o username do Usuario que deseja atualizar:");
+                    	msg.usuario = teclado.readLine();
+                    	 System.out.print("Atualizar Nome do usuario: ");
+                    	 msg.nome = teclado.readLine();
+                    	 System.out.print("Atualizar Senha do usuario: ");
+                    	 msg.senha = teclado.readLine();
+                    	break;
+                    case "10": 
+                        msg.op = "deletarUsuarioAdmin";   
+                        msg.token_admin = token;
+                        System.out.println("Digite o usuario que deseja deletar: ");
+                        msg.usuario = teclado.readLine();
+                        break;
+                    case "11":
                     	 ClientSocket.close();
                     	break;
 
@@ -116,13 +146,15 @@ public class ClienteTCP {
                 
               
                 if ("login".equalsIgnoreCase(msg.op) && "200".equals(respServer.resposta)) {
-                
-                    token = respServer.token;
+                	if(respServer.token_admin == null) {
+                		token = respServer.token;   		
+                	}else {
+                		token = respServer.token_admin;
+                	}
      
                 }
                 if ("logout".equalsIgnoreCase(msg.op) && "200".equals(respServer.resposta) ){
                     token = null;
-                    System.out.println(token);
                 }
                 
                 

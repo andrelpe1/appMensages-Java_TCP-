@@ -3,6 +3,7 @@ package service;
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.List;
 
 import dao.BancoDeDados;
 import entities.Usuario;
@@ -29,6 +30,11 @@ public class UsuarioService {
 	public Usuario mostrarUsuario(String usuario) throws SQLException,IOException{
 		Connection conn = BancoDeDados.conectar();
 		return new UsuarioDAO(conn).buscarPorUsername(usuario);
+	}
+	
+	public List<Usuario> listarUsuarios() throws SQLException,IOException{
+		Connection conn = BancoDeDados.conectar();
+		return new UsuarioDAO(conn).listarUsuarios();
 	}
 	
 	public Usuario login(String usuario, String senha) throws SQLException, IOException {
