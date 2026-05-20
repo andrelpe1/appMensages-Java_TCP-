@@ -82,20 +82,26 @@ public class ClienteTCP {
                     	 msg.nome = teclado.readLine();
                     	 System.out.print("Atualizar Senha: ");
                     	 msg.senha = teclado.readLine();
-                    	 msg.token = token;
+                    	 //vc pode mandar o teoken de outra pessoa msm n estando logado
+                    	 System.out.print("Mandar token: ");
+                    	 msg.token = teclado.readLine();
+                    	// msg.token = token;
                     	 break;
 
-                    case "4": // VER
+                    case "4": // 
                         msg.op= "consultarUsuario";
+                     
                         msg.token = token;
                         break;
 
-                    case "5": // DELETAR
-                        msg.op = "deletarUsuario";   
-                        msg.token = token;
+                    case "5": 
+                        msg.op = "deletarUsuario";  
+                        System.out.print("Mandar token: ");
+                        msg.token = teclado.readLine();
+                        //msg.token = token;
                         break;
 
-                    case "6": // SAIR
+                    case "6": 
                         msg.op = "logout";
                         msg.token = token;
                         break;
@@ -147,7 +153,8 @@ public class ClienteTCP {
               
                 if ("login".equalsIgnoreCase(msg.op) && "200".equals(respServer.resposta)) {
                 	if(respServer.token_admin == null) {
-                		token = respServer.token;   		
+                		token = respServer.token; 
+                		
                 	}else {
                 		token = respServer.token_admin;
                 	}
@@ -173,7 +180,7 @@ public class ClienteTCP {
             System.err.println("IP ou Porta não existe ");
             System.exit(1);
         } catch (Exception e) {
-            System.out.println("Falha na conexão com o servidor");
+            System.out.println("Falha na conexão com o servidor "+ e.getMessage() );
         }
     }
 }

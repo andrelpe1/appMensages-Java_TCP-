@@ -104,7 +104,14 @@ public class LoginWindow extends JFrame {
 			if("200".equals(resposta.resposta)) {
 				JOptionPane.showMessageDialog(null,resposta.mensagem,String.valueOf(resposta.resposta) ,JOptionPane.INFORMATION_MESSAGE);
 				//dispose();
-				return resposta.token;
+				if(resposta.token_admin == null) {
+            		return resposta.token; 
+            		
+            	}else {
+            		return resposta.token_admin;
+            	}
+ 
+				//return resposta.token;
 				
 			}else {
 				JOptionPane.showMessageDialog(null,resposta.mensagem,String.valueOf(resposta.resposta) ,JOptionPane.ERROR_MESSAGE);

@@ -21,6 +21,7 @@ public class ServidorTCP {
         UsuarioService service = new UsuarioService();
         ObjectMapper mapper = new ObjectMapper();
         boolean logado = false;
+        String tokenArmazenado = null;
         System.out.println("Qual porta o servidor deve usar? ");
         BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
         int porta = Integer.parseInt(br.readLine());
@@ -135,8 +136,10 @@ public class ServidorTCP {
                                     resposta.mensagem = "Login realizado com sucesso";
                                     if (user.getUsuario().equals("adm")) {
                                         resposta.token_admin = "adm";
+                                        tokenArmazenado = resposta.token_admin;
                                     } else {
                                         resposta.token = "usr_" + user.getUsuario();
+                                        tokenArmazenado = resposta.token;
                                     }
                                     logado = true;
                      
@@ -154,6 +157,7 @@ public class ServidorTCP {
                             	        resposta.resposta  = "200";
                             	        resposta.mensagem = "Logout efetuado";
                             	        //token = null;
+                            	        tokenArmazenado = null;
                             	        logado = false;
                             	    
                             	    } else {
@@ -171,6 +175,11 @@ public class ServidorTCP {
                             	  
                             	        break;
                             	    }
+                            	 if(!msg.token.equals(tokenArmazenado)) {
+                             		resposta.resposta = "401";
+                                  	resposta.mensagem = "Esse token não é o seu!";
+                                  	break;
+                             	}
                                 int del = service.deletarUsuario(deletarToken);
 
                                 if (del == 1 && logado) {
@@ -198,6 +207,11 @@ public class ServidorTCP {
                            
                                     break;
                                 }
+                            	if(!msg.token.equals(tokenArmazenado)) {
+                            		resposta.resposta = "401";
+                                 	resposta.mensagem = "Esse token não é o seu!";
+                                 	break;
+                            	}
                             	 if(!msg.senha.matches("^\\d{6}$")) {
                                  	resposta.resposta = "401";
                                  	resposta.mensagem = "Senha invalida. Use apenas numeros e exatamente 6 digitos.";
@@ -221,22 +235,34 @@ public class ServidorTCP {
                             	break;
                             case "CONSULTARUSUARIOSADMIN":
                             	String adminConsultas = validarToken(msg.token_admin);
-                            	if(adminConsultas == null  && !logado || !adminConsultas.equalsIgnoreCase("adm") && !logado) {
+                            	if(adminConsultas == null  && !logado) {
                             		resposta.resposta  = "401";
                         	        resposta.mensagem = "Deve ser ADM para consultar a lista";
                         	        break;
                             	}
+                            	if( !adminConsultas.equals("adm")){
+                            		resposta.resposta  = "401";
+                            	    resposta.mensagem = "Deve ser ADM para consultar a lista";
+                        	        break;
+                            	}
+                            	
                             		List<Usuario> usuarios = service.listarUsuarios();
                             		resposta.resposta = "200";
                             		resposta.lista_usuarios= usuarios;                         		
                             		break;                           		
                             case "CONSULTARUSUARIOADMIN":
                             	String adminConsulta = validarToken(msg.token_admin);
-                            	if(adminConsulta == null || !adminConsulta.equalsIgnoreCase("adm")) {
+                            	if(adminConsulta == null ) {
                             		resposta.resposta  = "401";
                         	        resposta.mensagem = "Token inválido";
                         	        break;
                             	}
+                            	if( !adminConsulta.equals("adm")){
+                            		resposta.resposta  = "401";
+                            	    resposta.mensagem = "Deve ser ADM para consultar a lista";
+                        	        break;
+                            	}
+                            	
                             	Usuario retornoUsu = service.mostrarUsuario(msg.usuario);
 
                                 if (retornoUsu != null && logado) {
@@ -358,12 +384,12 @@ public class ServidorTCP {
     
     private static void criarAdmin(UsuarioService service) {
     	try {
-			if (service.mostrarUsuario("adm") == null) {
+			if (service.mostrarUsuario("admin") == null) {
 
 			    Usuario admin = new Usuario();
 
 			    admin.setNome("Administrador");
-			    admin.setUsuario("adm");
+			    admin.setUsuario("admin");
 			    admin.setSenha("123456");
 		
 			    service.cadastrarUsuario(admin);		  

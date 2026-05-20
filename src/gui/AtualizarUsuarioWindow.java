@@ -43,6 +43,7 @@ public class AtualizarUsuarioWindow extends JFrame {
     private static String token = null;
     private JTextArea serverTXT;
    	private JTextArea clienteTXT;
+   	private JTextField tokenTXT;
 	/**
 	 * Launch the application.
 	 */
@@ -85,7 +86,7 @@ public class AtualizarUsuarioWindow extends JFrame {
 		 msg.op = "atualizarUsuario";
 		 msg.nome = nomeTXT.getText();
 		 msg.senha = senhaTXT.getText();
-		 msg.token = token;
+		 msg.token = tokenTXT.getText();
 		 String json;
 		try {
 			json = mapper.writeValueAsString(msg);
@@ -129,7 +130,7 @@ public class AtualizarUsuarioWindow extends JFrame {
 	 */
 	public void iniciarComponentes(Socket ClientSocket,DataInputStream in,PrintStream out,String token) {
 		setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-		setBounds(100, 100, 446, 445);
+		setBounds(100, 100, 484, 524);
 		contentPane = new JPanel();
 		contentPane.setBorder(new EmptyBorder(5, 5, 5, 5));
 
@@ -195,6 +196,16 @@ public class AtualizarUsuarioWindow extends JFrame {
 		
 		JLabel lblNewLabel_1_1_1 = new JLabel("Servidor retornou");
 		scrollPane_1.setColumnHeaderView(lblNewLabel_1_1_1);
+		
+		JLabel lblNewLabel_1_3 = new JLabel("Token");
+		lblNewLabel_1_3.setFont(new Font("Tahoma", Font.PLAIN, 16));
+		lblNewLabel_1_3.setBounds(63, 49, 45, 13);
+		contentPane.add(lblNewLabel_1_3);
+		
+		tokenTXT = new JTextField();
+		tokenTXT.setToolTipText("");
+		tokenTXT.setColumns(10);
+		tokenTXT.setBounds(129, 49, 287, 19);
+		contentPane.add(tokenTXT);
 	}
-
 }
