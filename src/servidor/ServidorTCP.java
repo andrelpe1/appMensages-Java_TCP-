@@ -18,12 +18,7 @@ public class ServidorTCP {
 	   
     public static void main(String args[]) throws IOException {
     	
-       
-        String token = null;
         UsuarioService service = new UsuarioService();
-        ObjectMapper mapper = new ObjectMapper();
-        boolean logado = false;
-        String tokenArmazenado = null;
         System.out.println("Qual porta o servidor deve usar? ");
         BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
         int porta = Integer.parseInt(br.readLine());
@@ -39,13 +34,8 @@ public class ServidorTCP {
                 Socket clientSocket = server.accept();
                 System.out.println("Cliente conectado: " + clientSocket.getInetAddress());
              
-                threadPool.execute(new ClienteHandler(clientSocket, service));
-
-     
-                
+                threadPool.execute(new ClienteHandler(clientSocket, service));    
                // System.out.println("Cliente conectado!");
-               
-
             } catch (Exception e) {
                 System.out.println("Erro: " + e.getMessage());
             }
@@ -57,8 +47,6 @@ public class ServidorTCP {
     	private final Socket clientSocket;
         private final UsuarioService service;
         private final ObjectMapper mapper = new ObjectMapper();
-
-        // Estado isolado por cliente (antes ficavam na classe principal — BUG em multithread!)
         private boolean logado = false;
         private String tokenArmazenado = null;
 
@@ -279,20 +267,22 @@ public class ServidorTCP {
                                     resposta.mensagem = "Erro ao atualizar o usuario";
                                     break;
                                 }
-                                if (msg.nome == null || msg.senha == null || msg.nome.isBlank()) {
-                                    resposta.resposta = "401";
-                                    resposta.mensagem = "Campos obrigatorios nao preenchidos";
-                                    break;
-                                }
-                                if (!msg.senha.matches("^\\d{6}$")) {
+          
+                                if (!msg.senha.matches("^\\d{6}$") && !msg.senha.isBlank()) {
                                     resposta.resposta = "401";
                                     resposta.mensagem = "Senha invalida. Use apenas numeros e exatamente 6 digitos.";
                                     break;
                                 }
+                                Usuario atual = service.mostrarUsuario(msg.usuario);
+                                if (atual == null) {
+                                    resposta.resposta = "404";
+                                    resposta.mensagem = "Usuario nao encontrado";
+                                    break;
+                                }
                                 Usuario update1 = new Usuario();
-                                update1.setNome(msg.nome);
                                 update1.setUsuario(msg.usuario);
-                                update1.setSenha(msg.senha);
+                                update1.setNome(  (msg.nome  != null && !msg.nome.isBlank())  ? msg.nome  : atual.getNome());
+                                update1.setSenha( (msg.senha != null && !msg.senha.isBlank()) ? msg.senha : atual.getSenha());
                                 int upd1 = service.atualizarUsuario(update1);
                                 if (upd1 == 1 && logado) {
                                     resposta.resposta = "200";
@@ -310,6 +300,11 @@ public class ServidorTCP {
                                     resposta.mensagem = "Deve ser ADM para deletar um usuario";
                                     break;
                                 }
+                                if(msg.usuario.equals("admin")) {
+                                  	 resposta.resposta = "401";
+                                       resposta.mensagem = "Não pode deletar admins!";
+                                       break;
+                                  }
                                 int del1 = service.deletarUsuario(msg.usuario);
                                 if (del1 == 1 && logado) {
                                     resposta.resposta = "200";
