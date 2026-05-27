@@ -2,6 +2,9 @@ package entities;
 
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class Mensagem {
 	  public String op;
 	  
