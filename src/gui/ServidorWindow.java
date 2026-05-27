@@ -297,7 +297,7 @@ public class ServidorWindow extends JFrame {
                                     break;
                                 }
                                
-                                if (!msg.senha.matches("^\\d{6}$") && !msg.senha.isBlank()) {
+                                if (msg.senha != null && !msg.senha.isBlank() && !msg.senha.matches("^\\d{6}$")) {
                                     resposta.resposta = "401";
                                     resposta.mensagem = "Senha invalida. Use apenas numeros e exatamente 6 digitos.";
                                     break;
