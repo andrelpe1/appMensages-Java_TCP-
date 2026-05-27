@@ -164,8 +164,8 @@ public class ServidorWindow extends JFrame {
                                     resposta.resposta = "200";
                                     resposta.mensagem = "Login realizado com sucesso";
                                     if (user.getUsuario().equals("admin")) {
-                                        resposta.token_admin = "adm";
-                                        tokenArmazenado = resposta.token_admin;
+                                        resposta.token = "adm";
+                                        tokenArmazenado = resposta.token;
                                     } else {
                                         resposta.token = "usr_" + user.getUsuario();
                                         tokenArmazenado = resposta.token;
