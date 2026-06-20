@@ -14,10 +14,13 @@ import java.net.*;
 import java.sql.SQLException;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 public class ServidorWindow extends JFrame {
 
     private static final long serialVersionUID = 1L;
@@ -33,6 +36,12 @@ public class ServidorWindow extends JFrame {
 
     private ExecutorService threadPool;
 
+    // Mapa de usuarios atualmente logados/conectados: usuario -> handler da conexao dele.
+    // Usado para rotear mensagens de uma thread de cliente para outra (enviarMensagem / broadcast)
+    // e para responder o listarUsuariosLogados.
+    private final ConcurrentHashMap<String, ClienteHandler> usuariosOnline = new ConcurrentHashMap<>();
+    private JLabel lblNewLabel_4;
+    private JTextArea usuarioTXTAREA;
     public static void main(String[] args) {
         EventQueue.invokeLater(() -> {
             try {
@@ -80,6 +89,15 @@ public class ServidorWindow extends JFrame {
         private boolean logado = false;
         private String tokenArmazenado = null;
 
+        // Saida de dados para ESTE cliente. Precisa ser campo (nao variavel local de run())
+        // porque outras threads (de OUTROS clientes) escrevem aqui quando alguem manda
+        // uma mensagem para este usuario.
+        private PrintWriter out;
+
+        // Usuario real (ex: "joao123" ou "admin") associado a esta conexao, preenchido no login.
+        // Eh a chave usada no mapa usuariosOnline.
+        private String usuarioLogado = null;
+
         public ClienteHandler(Socket clientSocket, UsuarioService service) {
             this.clientSocket = clientSocket;
             this.service = service;
@@ -87,10 +105,11 @@ public class ServidorWindow extends JFrame {
 
         @Override
         public void run() {
-            try (
-                BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-                PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true)
-            ) {
+            BufferedReader in = null;
+            try {
+                in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+                out = new PrintWriter(clientSocket.getOutputStream(), true);
+
                 String json;
                 while ((json = in.readLine()) != null) {
                     final String jsonLog = json;
@@ -171,6 +190,12 @@ public class ServidorWindow extends JFrame {
                                         tokenArmazenado = resposta.token;
                                     }
                                     logado = true;
+
+                                    // Registra este usuario como online, para poder receber mensagens
+                                    // e aparecer no listarUsuariosLogados.
+                                    usuarioLogado = user.getUsuario();
+                                    usuariosOnline.put(usuarioLogado, this);
+                                    atualizarUsuariosOnlineTela();
                                 } else {
                                     resposta.resposta = "401";
                                     resposta.mensagem = "Usuario ou senha invalidos";
@@ -182,11 +207,19 @@ public class ServidorWindow extends JFrame {
                                 if (usuarioLogout != null) {
                                     resposta.resposta = "200";
                                     resposta.mensagem = "Logout efetuado";
+                                    if (usuarioLogado != null) {
+                                        usuariosOnline.remove(usuarioLogado);
+                                        atualizarUsuariosOnlineTela();
+                                    }
                                     tokenArmazenado = null;
                                     logado = false;
+                                    usuarioLogado = null;
+                                    
+                                    
                                 } else {
                                     resposta.resposta = "401";
                                     resposta.mensagem = "Erro ao efetuar logout";
+                                    
                                 }
                                 break;
 
@@ -206,6 +239,12 @@ public class ServidorWindow extends JFrame {
                                 if (del == 1) {
                                     resposta.resposta = "200";
                                     resposta.mensagem = "Usuario deletado";
+                                    if (usuarioLogado != null) {
+                                        usuariosOnline.remove(usuarioLogado);
+                                        atualizarUsuariosOnlineTela();
+                                    }
+                                    logado = false;
+                                    usuarioLogado = null;
                                 } else {
                                     resposta.resposta = "404";
                                     resposta.mensagem = "Usuario não encontrado";
@@ -249,7 +288,7 @@ public class ServidorWindow extends JFrame {
                                 break;
 
                             case "CONSULTARUSUARIOSADMIN":
-                                String adminConsultas = validarToken(msg.token_admin);
+                                String adminConsultas = validarToken(msg.token);
                                 if (adminConsultas == null || !logado) {
                                     resposta.resposta = "401";
                                     resposta.mensagem = "Deve ser ADM para consultar a lista";
@@ -266,7 +305,7 @@ public class ServidorWindow extends JFrame {
                                 break;
 
                             case "CONSULTARUSUARIOADMIN":
-                                String adminConsulta = validarToken(msg.token_admin);
+                                String adminConsulta = validarToken(msg.token);
                                 if (adminConsulta == null) {
                                     resposta.resposta = "401";
                                     resposta.mensagem = "Token inválido";
@@ -290,7 +329,7 @@ public class ServidorWindow extends JFrame {
                                 break;
 
                             case "ATUALIZARUSUARIOADMIN":
-                                String adminAtualizar = validarToken(msg.token_admin);
+                                String adminAtualizar = validarToken(msg.token);
                                 if (adminAtualizar == null || !adminAtualizar.equalsIgnoreCase("adm")) {
                                     resposta.resposta = "401";
                                     resposta.mensagem = "Erro ao atualizar o usuario";
@@ -325,7 +364,7 @@ public class ServidorWindow extends JFrame {
                                 break;
 
                             case "DELETARUSUARIOADMIN":
-                                String adminDeletar = validarToken(msg.token_admin);
+                                String adminDeletar = validarToken(msg.token);
                                 if (adminDeletar == null || !adminDeletar.equalsIgnoreCase("adm")) {
                                     resposta.resposta = "401";
                                     resposta.mensagem = "Deve ser ADM para deletar um usuario";
@@ -340,11 +379,87 @@ public class ServidorWindow extends JFrame {
                                 if (del1 == 1 && logado) {
                                     resposta.resposta = "200";
                                     resposta.mensagem = "Usuario deletado";
+                                    // Se a vitima estiver online, derruba ela da lista de online tambem.
+                                    usuariosOnline.remove(msg.usuario);
+                                    atualizarUsuariosOnlineTela();
                                 } else {
                                     resposta.resposta = "404";
                                     resposta.mensagem = "Usuario não encontrado";
                                 }
                                 break;
+
+                            case "ENVIARMENSAGEM": {
+                                String remetenteValido = validarToken(msg.token);
+                                if (remetenteValido == null || !logado || usuarioLogado == null
+                                        || !msg.token.equals(tokenArmazenado)) {
+                                    resposta.resposta = "401";
+                                    resposta.op = "enviarMensagem";
+                                    resposta.mensagem = "Token invalido";
+                                    break;
+                                }
+                                if (msg.destinatario == null || msg.destinatario.isBlank()) {
+                                    resposta.resposta = "400";
+                                    resposta.op = "enviarMensagem";
+                                    resposta.mensagem = "Destinatario obrigatorio";
+                                    break;
+                                }
+                                if (msg.mensagem == null || msg.mensagem.isBlank()) {
+                                    resposta.resposta = "400";
+                                    resposta.op = "enviarMensagem";
+                                    resposta.mensagem = "Mensagem nao pode ser vazia";
+                                    break;
+                                }
+
+                                if (msg.destinatario.equals("/todos")) {
+                                    // BROADCAST: manda para todo mundo online, exceto quem enviou.
+                                    int enviados = 0;
+                                    for (ClienteHandler cliente : usuariosOnline.values()) {
+                                        if (cliente == this) continue;
+                                        Mensagem push = new Mensagem();
+                                        push.op = "receberMensagem";
+                                        push.remetente = usuarioLogado;
+                                        push.mensagem = msg.mensagem;
+                                        cliente.enviarPush(push);
+                                        enviados++;
+                                    }
+                                    resposta.resposta = "200";
+                                    resposta.op = "enviarMensagem";
+                                    resposta.mensagem = "Broadcast enviado para " + enviados + " usuario(s) online";
+                                } else {
+                                    ClienteHandler destino = usuariosOnline.get(msg.destinatario);
+                                    if (destino == null) {
+                                        resposta.resposta = "404";
+                                        resposta.op = "enviarMensagem";
+                                        resposta.mensagem = "Usuario destinatario nao encontrado ou offline";
+                                        break;
+                                    }
+                                    Mensagem push = new Mensagem();
+                                    push.op = "receberMensagem";
+                                    push.remetente = usuarioLogado;
+                                    push.mensagem = msg.mensagem;
+                                    destino.enviarPush(push);
+
+                                    resposta.resposta = "200";
+                                    resposta.op = "enviarMensagem";
+                                    resposta.mensagem = "Mensagem enviada com sucesso";
+                                }
+                                break;
+                            }
+
+                            case "LISTARUSUARIOSLOGADOS": {
+                                String quemPediu = validarToken(msg.token);
+                                if (quemPediu == null || !logado || usuarioLogado == null) {
+                                    resposta.resposta = "401";
+                                    resposta.op = "listarUsuariosLogados";
+                                    resposta.mensagem = "Token invalido";
+                                    break;
+                                }
+                                resposta.resposta = "200";
+                                resposta.op = "listarUsuariosLogados";
+                                resposta.mensagem = "Lista de usuarios logados";
+                                resposta.usuariosLogados = new ArrayList<>(usuariosOnline.keySet());
+                                break;
+                            }
 
                             default:
                                 resposta.resposta = "400";
@@ -370,8 +485,47 @@ public class ServidorWindow extends JFrame {
 
             } catch (IOException e) {
                 appendServidor("Cliente desconectado.\n");
-            } 
-            
+            } finally {
+                // Garante que, ao cair a conexao (fechou o app, perdeu rede, etc),
+                // o usuario saia da lista de online e pare de receber mensagens.
+                if (usuarioLogado != null) {
+                    usuariosOnline.remove(usuarioLogado);
+                    atualizarUsuariosOnlineTela();
+                }
+                try {
+                    if (in != null) in.close();
+                } catch (IOException ignored) {}
+                if (out != null) out.close();
+                try {
+                    clientSocket.close();
+                } catch (IOException ignored) {}
+            }
+        }
+
+        /**
+         * Chamado pela thread de OUTRO cliente para entregar uma mensagem a este cliente.
+         * PrintWriter.println ja eh sincronizado internamente, entao isso eh seguro mesmo
+         * concorrendo com a propria thread deste handler escrevendo respostas normais.
+         */
+        
+        private void atualizarUsuariosOnlineTela() {
+            SwingUtilities.invokeLater(() -> {
+                usuarioTXTAREA.setText("");
+
+                for (String usuario : usuariosOnline.keySet()) {
+                    usuarioTXTAREA.append(usuario + "\n");
+                }
+            });
+        }
+        
+        public void enviarPush(Mensagem push) {
+            try {
+                String json = mapper.writeValueAsString(push);
+                out.println(json);
+                appendServidor("{" + hora() + "} PUSH -> " + usuarioLogado + ": " + json + "\n");
+            } catch (Exception e) {
+                appendServidor("Erro ao enviar push para " + usuarioLogado + ": " + e.getMessage() + "\n");
+            }
         }
     }
 
@@ -399,6 +553,7 @@ public class ServidorWindow extends JFrame {
         int porta = Integer.parseInt(portTXT.getText());
         try {
             threadPool = Executors.newFixedThreadPool(50); 
+            usuariosOnline.clear();
             server = new ServerSocket(porta);
             new Thread(() -> servidorTCP(server)).start(); 
             btnAbrir.setEnabled(false);
@@ -414,6 +569,7 @@ public class ServidorWindow extends JFrame {
             try {
                 threadPool.shutdownNow(); 
                 server.close();
+                usuariosOnline.clear();
                 JOptionPane.showMessageDialog(null, "Servidor foi fechado", "FECHADO", JOptionPane.INFORMATION_MESSAGE);
                 btnFecharServer.setEnabled(false);
                 btnAbrir.setEnabled(true);
@@ -444,7 +600,7 @@ public class ServidorWindow extends JFrame {
 
     public ServidorWindow() {
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setBounds(100, 100, 925, 687);
+        setBounds(100, 100, 1286, 687);
         contentPane = new JPanel();
         contentPane.setBorder(new EmptyBorder(5, 5, 5, 5));
         setContentPane(contentPane);
@@ -504,5 +660,18 @@ public class ServidorWindow extends JFrame {
         btnapagar.addActionListener(e -> limparComponentes());
         btnapagar.setBounds(419, 619, 85, 21);
         contentPane.add(btnapagar);
+        
+        lblNewLabel_4 = new JLabel("Usuarios Online");
+        lblNewLabel_4.setFont(new Font("Tahoma", Font.PLAIN, 19));
+        lblNewLabel_4.setBounds(1055, 79, 146, 29);
+        contentPane.add(lblNewLabel_4);
+        
+        usuarioTXTAREA = new JTextArea();
+        usuarioTXTAREA.setBackground(new Color(192, 192, 192));
+        usuarioTXTAREA.setText("");
+        usuarioTXTAREA.setFont(new Font("Tw Cen MT", Font.ITALIC, 21));
+        usuarioTXTAREA.setEditable(false);
+        usuarioTXTAREA.setBounds(1008, 105, 231, 498);
+        contentPane.add(usuarioTXTAREA);
     }
 }

@@ -108,7 +108,7 @@ public class LoginWindow extends JFrame {
             		return resposta.token; 
             		
             	}else {
-            		return resposta.token_admin;
+            		return resposta.token;
             	}
  
 				//return resposta.token;

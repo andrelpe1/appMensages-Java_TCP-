@@ -88,7 +88,7 @@ public class AtualizarUsuarioAdminWindow extends JFrame {
 		 msg.nome = nomeTXT.getText();
 		 msg.senha = senhaTXT.getText();
 		 msg.usuario = armazenaUsername;
-		 msg.token_admin = token;
+		 msg.token = token;
 		 String json;
 		try {
 			json = mapper.writeValueAsString(msg);

@@ -84,7 +84,7 @@ public class ConsultarUsuariosAdminWindow extends JFrame {
 		ObjectMapper mapper = new ObjectMapper();
 		 Mensagem msg = new Mensagem();
 		 msg.op = "consultarUsuariosAdmin";
-		 msg.token_admin = token;
+		 msg.token = token;
 		 String json;
 		try {
 			json = mapper.writeValueAsString(msg);

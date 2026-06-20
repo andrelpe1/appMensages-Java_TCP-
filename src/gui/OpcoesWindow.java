@@ -159,7 +159,7 @@ public class OpcoesWindow extends JFrame {
 		ObjectMapper mapper = new ObjectMapper();
 		 Mensagem msg = new Mensagem();
 		 msg.op = "consultarUsuarioAdmin";
-		 msg.token_admin = token;
+		 msg.token = token;
 		 msg.usuario = JOptionPane.showInputDialog(null,"Digite o username", "Usuario",JOptionPane.INFORMATION_MESSAGE);
 		 String json;
 		try {
@@ -226,7 +226,7 @@ public class OpcoesWindow extends JFrame {
 		ObjectMapper mapper = new ObjectMapper();
 		 Mensagem msg = new Mensagem();
 		 msg.op = "deletarUsuarioAdmin";
-		 msg.token_admin = token;
+		 msg.token = token;
 		msg.usuario = JOptionPane.showInputDialog(null,"Digite o usuario", "Usuario",JOptionPane.INFORMATION_MESSAGE);
 		 
 		 String json;
@@ -343,14 +343,14 @@ public class OpcoesWindow extends JFrame {
 		btnAtualizarUsuario.setBounds(24, 121, 158, 37);
 		contentPane.add(btnAtualizarUsuario);
 		
-		JButton btnConsultarUsuario = new JButton("Consultar Usuario");
+		JButton btnConsultarUsuario = new JButton("Mandar Mensagem");
 		btnConsultarUsuario.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				enviarParaServidorConsultar(ClientSocket, in, out,token);
 			
 			}
 		});
-		btnConsultarUsuario.setBounds(24, 178, 158, 37);
+		btnConsultarUsuario.setBounds(24, 235, 158, 37);
 		contentPane.add(btnConsultarUsuario);
 		
 		JButton btnDeletarUsuario = new JButton("Deletar Usuario");
@@ -389,7 +389,7 @@ public class OpcoesWindow extends JFrame {
 				
 			}
 		});
-		btnFecharConexao.setBounds(103, 271, 211, 43);
+		btnFecharConexao.setBounds(106, 310, 211, 43);
 		contentPane.add(btnFecharConexao);
 		
 		JScrollPane scrollPane = new JScrollPane();
@@ -467,5 +467,13 @@ public class OpcoesWindow extends JFrame {
 		  });
 		  btnDeletarUsuarioAdmin.setBounds(565, 235, 158, 37);
 		  contentPane.add(btnDeletarUsuarioAdmin);
+		  
+		  JButton btnConsultarUsuario_1 = new JButton("Consultar Usuario");
+		  btnConsultarUsuario_1.setBounds(24, 178, 158, 37);
+		  contentPane.add(btnConsultarUsuario_1);
+		  
+		  JButton btnListarUsuarios = new JButton("Listar Usuarios");
+		  btnListarUsuarios.setBounds(233, 235, 158, 37);
+		  contentPane.add(btnListarUsuarios);
 	}
 }
