@@ -9,6 +9,7 @@ import javax.swing.border.EmptyBorder;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import cliente.ConexaoCliente;
 import entities.Mensagem;
 
 import javax.swing.JLabel;
@@ -35,12 +36,10 @@ public class LoginWindow extends JFrame {
 	private JPanel contentPane;
 	private JTextField usuarioTXT;
 	private JTextField senhaTXT;
-	private static  OpcoesWindow opcoesWindow;
-	private static Socket ClientSocket = null;
-	static DataInputStream in;                  // cria um duto de entrada
-    static PrintStream out; 
+	private static  OpcoesWindow opcoesWindow; 
     private JTextArea serverTXT;
 	private JTextArea clienteTXT;
+	private static ConexaoCliente conexao;
 	/**
 	 * Launch the application.
 	 */
@@ -48,7 +47,7 @@ public class LoginWindow extends JFrame {
 		EventQueue.invokeLater(new Runnable() {
 			public void run() {
 				try {
-					LoginWindow frame = new LoginWindow(opcoesWindow,ClientSocket,in,out);
+					LoginWindow frame = new LoginWindow(opcoesWindow,conexao);
 					frame.setVisible(true);
 				} catch (Exception e) {
 					e.printStackTrace();
@@ -66,77 +65,57 @@ public class LoginWindow extends JFrame {
 	
 	
 
-	public LoginWindow(OpcoesWindow opcoesWindow,Socket ClientSocket,DataInputStream in,PrintStream out) {
+	public LoginWindow(OpcoesWindow opcoesWindow,ConexaoCliente conexao) {
 		
-		this.opcoesWindow = opcoesWindow;
-		getContentPane().setLayout(null);
+		 this.opcoesWindow = opcoesWindow;
+	     this.conexao      = conexao;
 		addWindowListener(new WindowAdapter() {	
 			@Override
 			public void windowClosed(WindowEvent e) {
 				fecharJanela();
 			}
 		});
-		iniciarComponentes(opcoesWindow,ClientSocket,in,out);
+		iniciarComponentes();
 	}
 	
-	private String enviarParaServidor(Socket ClientSocket,DataInputStream in,PrintStream out) {
-		ObjectMapper mapper = new ObjectMapper();
+	private void enviarParaServidor() {
 		 Mensagem msg = new Mensagem();
 		 msg.op = "login";
 		 msg.usuario = usuarioTXT.getText();
 		 msg.senha = senhaTXT.getText();
 		 
-		 String json;
+	
 		try {
-			json = mapper.writeValueAsString(msg);
-			out.println(json);
-			 System.out.println("ENVIADO: "+json);
+			String json = conexao.mapper.writeValueAsString(msg);
 			 clienteTXT.setText(json);
-		} catch (JsonProcessingException e) {
-			JOptionPane.showMessageDialog(null,"Erro ao criar JSON", e.getMessage(), JOptionPane.ERROR_MESSAGE);
-		}
-		
-		try {
-			String respostaJson = in.readLine();
-			   System.out.println("RECEBIDO: "+respostaJson);
-			   serverTXT.setText(respostaJson);
-			Mensagem resposta = mapper.readValue(respostaJson, Mensagem.class);
-			if("200".equals(resposta.resposta)) {
-				JOptionPane.showMessageDialog(null,resposta.mensagem,String.valueOf(resposta.resposta) ,JOptionPane.INFORMATION_MESSAGE);
-				//dispose();
-				if(resposta.token != "adm") {
-            		return resposta.token; 
-            		
-            	}else {
-            		return resposta.token;
-            	}
- 
-				//return resposta.token;
-				
-			}else {
-				JOptionPane.showMessageDialog(null,resposta.mensagem,String.valueOf(resposta.resposta) ,JOptionPane.ERROR_MESSAGE);
-			}
-		} catch (IOException e) {
-		    JOptionPane.showMessageDialog(null, "Conexão com servidor perdida!", "Erro", JOptionPane.ERROR_MESSAGE);
-		    fecharConexao();
-		}
-	
-		return null;
+			 conexao.enviar(msg);
+			 Mensagem resp = conexao.aguardarResposta();
+			 
+			 String jsonRecebido = conexao.mapper.writeValueAsString(resp);
+			 serverTXT.setText(jsonRecebido);
+			 
+			  if ("200".equals(resp.resposta)) {
+	              JOptionPane.showMessageDialog(this,resp.mensagem, resp.resposta, JOptionPane.INFORMATION_MESSAGE);
+	              opcoesWindow.setToken(resp.token);
+	               fecharJanela();
+			  }else {
+	                JOptionPane.showMessageDialog(this,resp.mensagem, resp.resposta, JOptionPane.ERROR_MESSAGE);
+	                }
+		}  catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            JOptionPane.showMessageDialog(this, "Operação interrompida.", "Aviso", JOptionPane.WARNING_MESSAGE);
+        } catch (IOException e) {
+            JOptionPane.showMessageDialog(this, "Conexão com servidor perdida!", "Erro", JOptionPane.ERROR_MESSAGE);
+            conexao.fechar();
+            dispose();
+        }
 	}
 	
-	private void fecharConexao() {
-		try {
-			ClientSocket.close();
-			dispose();
-		} catch (IOException e1) {
-			JOptionPane.showMessageDialog(null,"Erro ao fechar conexão", e1.getMessage(), JOptionPane.ERROR_MESSAGE);
-		}
-	}
 
 	/**
 	 * Create the frame.
 	 */
-	public void iniciarComponentes(OpcoesWindow opcoesWindow,Socket ClientSocket,DataInputStream in,PrintStream out) {
+	public void iniciarComponentes() {
 		setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 		setBounds(100, 100, 371, 479);
 		contentPane = new JPanel();
@@ -173,7 +152,7 @@ public class LoginWindow extends JFrame {
 		JButton btnNewButton = new JButton("Logar");
 		btnNewButton.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-			 opcoesWindow.setToken(enviarParaServidor(ClientSocket, in, out));  
+			 enviarParaServidor();  
 			}
 		});
 		btnNewButton.setBounds(124, 213, 122, 32);

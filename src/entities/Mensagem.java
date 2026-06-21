@@ -14,11 +14,9 @@ public class Mensagem {
 	  public String token;
 	  public List<Usuario> lista_usuarios;
 
-	  // Usados pela funcionalidade de envio de mensagens entre usuarios
-	  public String destinatario; // usuario destino, ou "/todos" para broadcast
-	  public String remetente;    // preenchido pelo servidor ao repassar a mensagem para o destinatario
+	  public String destinatario; 
+	  public String remetente;    
 
-	  // Usado pela funcionalidade de listar usuarios logados
 	  public List<String> usuariosLogados;
 	  
 	  public List<Usuario> getLista_usuarios() {

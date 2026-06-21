@@ -10,6 +10,7 @@ import javax.swing.border.EmptyBorder;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import cliente.ConexaoCliente;
 import entities.Mensagem;
 
 import javax.swing.JLabel;
@@ -45,6 +46,8 @@ public class AtualizarUsuarioAdminWindow extends JFrame {
     private JTextArea serverTXT;
    	private JTextArea clienteTXT;
    	private String armazenaUsername = null;
+   	
+	private static ConexaoCliente conexao;
 	/**
 	 * Launch the application.
 	 */
@@ -52,7 +55,7 @@ public class AtualizarUsuarioAdminWindow extends JFrame {
 		EventQueue.invokeLater(new Runnable() {
 			public void run() {
 				try {
-					AtualizarUsuarioWindow frame = new AtualizarUsuarioWindow(opcoesWindow,ClientSocket,in,out,token);
+					AtualizarUsuarioWindow frame = new AtualizarUsuarioWindow(opcoesWindow,conexao,token);
 					frame.setVisible(true);
 				} catch (Exception e) {
 					e.printStackTrace();
@@ -68,8 +71,8 @@ public class AtualizarUsuarioAdminWindow extends JFrame {
 		  }
 	}
 
-	public AtualizarUsuarioAdminWindow(OpcoesWindow opcoesWindow,Socket ClientSocket,DataInputStream in,PrintStream out,String token) {
-		
+	public AtualizarUsuarioAdminWindow(OpcoesWindow opcoesWindow,ConexaoCliente conexao,String token) {
+		this.conexao = conexao;
 		this.opcoesWindow = opcoesWindow;
 		getContentPane().setLayout(null);
 		addWindowListener(new WindowAdapter() {	
@@ -78,59 +81,44 @@ public class AtualizarUsuarioAdminWindow extends JFrame {
 				fecharJanela();
 			}
 		});
-		iniciarComponentes(ClientSocket, in, out,token);
+		iniciarComponentes(token);
 	}
 	
-	private boolean enviarParaServidor(Socket ClientSocket,DataInputStream in,PrintStream out,String token) {
-		ObjectMapper mapper = new ObjectMapper();
+	private void enviarParaServidor(String token) {
 		 Mensagem msg = new Mensagem();
 		 msg.op = "atualizarUsuarioAdmin";
 		 msg.nome = nomeTXT.getText();
 		 msg.senha = senhaTXT.getText();
 		 msg.usuario = armazenaUsername;
 		 msg.token = token;
-		 String json;
+		 
 		try {
-			json = mapper.writeValueAsString(msg);
-			out.println(json);
-			 System.out.println("ENVIADO: "+json);
+			String json = conexao.mapper.writeValueAsString(msg);
 			 clienteTXT.setText(json);
-		} catch (JsonProcessingException e) {
-			JOptionPane.showMessageDialog(null,"Erro ao criar JSON", e.getMessage(), JOptionPane.ERROR_MESSAGE);
-		}
-		
-		try {
-			String respostaJson = in.readLine();
-			   System.out.println("RECEBIDO: "+respostaJson);
-			   serverTXT.setText(respostaJson);
-			Mensagem resposta = mapper.readValue(respostaJson, Mensagem.class);
-			if("200".equals(resposta.resposta)) {
-				JOptionPane.showMessageDialog(null,resposta.mensagem,String.valueOf(resposta.resposta) ,JOptionPane.INFORMATION_MESSAGE);
-				return true;
-			}else {
-				JOptionPane.showMessageDialog(null,resposta.mensagem,String.valueOf(resposta.resposta) ,JOptionPane.ERROR_MESSAGE);
-			}
-		} catch (IOException e) {
-		    JOptionPane.showMessageDialog(null, "Conexão com servidor perdida!", "Erro", JOptionPane.ERROR_MESSAGE);
-		    fecharConexao();
-		}
-	
-		return false;
-	}
-	
-	private void fecharConexao() {
-		try {
-			ClientSocket.close();
-			dispose();
-		} catch (IOException e1) {
-			JOptionPane.showMessageDialog(null,"Erro ao fechar conexão", e1.getMessage(), JOptionPane.ERROR_MESSAGE);
-		}
+			 Mensagem resp = conexao.aguardarResposta();
+			 
+			 String jsonRecebido = conexao.mapper.writeValueAsString(resp);
+			 serverTXT.setText(jsonRecebido);
+			 if ("200".equals(resp.resposta)) {
+	              JOptionPane.showMessageDialog(this,resp.mensagem, resp.resposta, JOptionPane.INFORMATION_MESSAGE);
+	               fecharJanela();
+			  }else {
+	                JOptionPane.showMessageDialog(this,resp.mensagem, resp.resposta, JOptionPane.ERROR_MESSAGE);
+	                }
+		}  catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            JOptionPane.showMessageDialog(this, "Operação interrompida.", "Aviso", JOptionPane.WARNING_MESSAGE);
+        } catch (IOException e) {
+            JOptionPane.showMessageDialog(this, "Conexão com servidor perdida!", "Erro", JOptionPane.ERROR_MESSAGE);
+            conexao.fechar();
+            dispose();
+        }
 	}
 	
 	/**
 	 * Create the frame.
 	 */
-	public void iniciarComponentes(Socket ClientSocket,DataInputStream in,PrintStream out,String token) {
+	public void iniciarComponentes(String token) {
 		setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 		setBounds(100, 100, 484, 524);
 		contentPane = new JPanel();
@@ -169,9 +157,7 @@ public class AtualizarUsuarioAdminWindow extends JFrame {
 		JButton btnAtualizar = new JButton("ATUALIZAR");
 		btnAtualizar.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				if(enviarParaServidor(ClientSocket,in,out,token)) {
-					//dispose();
-				};
+				enviarParaServidor(token);
 			}
 		});
 		btnAtualizar.setBounds(182, 232, 127, 29);
@@ -222,3 +208,4 @@ public class AtualizarUsuarioAdminWindow extends JFrame {
 		contentPane.add(alterarBtn);
 	}
 }
+

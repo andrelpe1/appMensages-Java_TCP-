@@ -9,6 +9,7 @@ import javax.swing.border.EmptyBorder;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import cliente.ConexaoCliente;
 import entities.Mensagem;
 
 import javax.swing.JLabel;
@@ -42,6 +43,8 @@ public class CadastrarusuarioWindow extends JFrame {
     static PrintStream out; 
 	private JTextArea serverTXT;
 	private JTextArea clienteTXT;
+	
+	 private static ConexaoCliente conexao;
 
 	/**
 	 * Launch the application.
@@ -50,7 +53,7 @@ public class CadastrarusuarioWindow extends JFrame {
 		EventQueue.invokeLater(new Runnable() {
 			public void run() {
 				try {
-					CadastrarusuarioWindow frame = new CadastrarusuarioWindow(opcoesWindow,ClientSocket,in,out);
+					CadastrarusuarioWindow frame = new CadastrarusuarioWindow(opcoesWindow,conexao);
 					frame.setVisible(true);
 				} catch (Exception e) {
 					e.printStackTrace();
@@ -66,8 +69,8 @@ public class CadastrarusuarioWindow extends JFrame {
 		  }
 	}
 
-	public CadastrarusuarioWindow(OpcoesWindow opcoesWindow,Socket ClientSocket,DataInputStream in,PrintStream out) {
-		
+	public CadastrarusuarioWindow(OpcoesWindow opcoesWindow, ConexaoCliente conexao) {
+		this.conexao = conexao;
 		this.opcoesWindow = opcoesWindow;
 		getContentPane().setLayout(null);
 		addWindowListener(new WindowAdapter() {	
@@ -76,61 +79,46 @@ public class CadastrarusuarioWindow extends JFrame {
 				fecharJanela();
 			}
 		});
-		iniciarComponentes(ClientSocket, in,out);
+		iniciarComponentes();
 	}
 	
-	private void enviarParaServidor(Socket ClientSocket,DataInputStream in,PrintStream out) {
-		ObjectMapper mapper = new ObjectMapper();
+	private void enviarParaServidor() {
 		 Mensagem msg = new Mensagem();
 		 msg.op = "cadastrarUsuario";
 		 msg.usuario = usuarioTXT.getText();
 		 msg.nome = nomeTXT.getText();
 		 msg.senha = senhaTXT.getText();
 		 
-		 String json;
 		try {
-			json = mapper.writeValueAsString(msg);
-			out.println(json);
-			 System.out.println("ENVIADO: "+json);
+			 String json= conexao.mapper.writeValueAsString(msg);
 			 clienteTXT.setText(json);
-		} catch (JsonProcessingException e) {
-			JOptionPane.showMessageDialog(null,"Erro ao criar JSON", e.getMessage(), JOptionPane.ERROR_MESSAGE);
-		}
-		
-		try {
-			String respostaJson = in.readLine();
-			  if (respostaJson == null) {
-			        JOptionPane.showMessageDialog(null, "Servidor desconectado!", "Erro", JOptionPane.ERROR_MESSAGE);
-			        fecharConexao();
-			        return;
-			    }
-			   System.out.println("RECEBIDO: "+respostaJson);
-			   serverTXT.setText(respostaJson);
-			Mensagem resposta = mapper.readValue(respostaJson, Mensagem.class);
-			if("200".equals(resposta.resposta)) {
-				JOptionPane.showMessageDialog(null,resposta.mensagem,String.valueOf(resposta.resposta) ,JOptionPane.INFORMATION_MESSAGE);
-				//dispose();
-			}else {
-				JOptionPane.showMessageDialog(null,resposta.mensagem ,String.valueOf(resposta.resposta) ,JOptionPane.ERROR_MESSAGE);
-			}
-		}catch (IOException e) {
-		    JOptionPane.showMessageDialog(null, "Conexão com servidor perdida!", "Erro", JOptionPane.ERROR_MESSAGE);
-		    fecharConexao();
-		}
+			 conexao.enviar(msg);
+			 Mensagem resp = conexao.aguardarResposta();
+			 
+			 String jsonRecebido = conexao.mapper.writeValueAsString(resp);
+			 serverTXT.setText(jsonRecebido);
+			 if ("200".equals(resp.resposta)) {
+	              JOptionPane.showMessageDialog(this,resp.mensagem, resp.resposta, JOptionPane.INFORMATION_MESSAGE);
+	               fecharJanela();
+			  }else {
+	                JOptionPane.showMessageDialog(this,resp.mensagem, resp.resposta, JOptionPane.ERROR_MESSAGE);
+	                }
+		} catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            JOptionPane.showMessageDialog(this, "Operação interrompida.", "Aviso", JOptionPane.WARNING_MESSAGE);
+        } catch (IOException e) {
+            JOptionPane.showMessageDialog(this, "Conexão com servidor perdida!", "Erro", JOptionPane.ERROR_MESSAGE);
+            conexao.fechar();
+            dispose();
+        }
 	}
-	private void fecharConexao() {
-		try {
-			ClientSocket.close();
-			dispose();
-		} catch (IOException e1) {
-			JOptionPane.showMessageDialog(null,"Erro ao fechar conexão", e1.getMessage(), JOptionPane.ERROR_MESSAGE);
-		}
-	}
+	
+
 	
 	/**
 	 * Create the frame.
 	 */
-	public void iniciarComponentes(Socket ClientSocket,DataInputStream in,PrintStream out) {
+	public void iniciarComponentes() {
 		setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 		setBounds(100, 100, 422, 509);
 		contentPane = new JPanel();
@@ -177,8 +165,7 @@ public class CadastrarusuarioWindow extends JFrame {
 		JButton btnNewButton = new JButton("CADASTRAR");
 		btnNewButton.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				enviarParaServidor( ClientSocket, in, out);
-				
+				enviarParaServidor();		
 			}
 		});
 		btnNewButton.setBounds(143, 205, 126, 35);

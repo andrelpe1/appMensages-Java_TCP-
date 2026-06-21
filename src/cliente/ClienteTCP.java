@@ -44,8 +44,7 @@ public class ClienteTCP {
             System.out.println("Tentando conectar com host " + serverIP + " na porta " + serverPort);
 
             clientSocket = new Socket(serverIP, serverPort);
-            final BufferedReader inSocket = new BufferedReader(
-                    new InputStreamReader(clientSocket.getInputStream()));
+            final DataInputStream inSocket = new DataInputStream(clientSocket.getInputStream());
             out = new PrintWriter(clientSocket.getOutputStream(), true);
             System.out.println("Conectado ao Servidor");
 

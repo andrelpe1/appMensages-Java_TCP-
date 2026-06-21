@@ -16,6 +16,7 @@ import javax.swing.border.EmptyBorder;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import cliente.ConexaoCliente;
 import entities.Mensagem;
 import entities.Usuario;
 
@@ -40,6 +41,8 @@ public class ConsultarUsuariosAdminWindow extends JFrame {
 	static DataInputStream in;                  // cria um duto de entrada
     static PrintStream out; 
     private static String token = null;
+    
+	private static ConexaoCliente conexao;
 	/**
 	 * Launch the application.
 	 */
@@ -47,7 +50,7 @@ public class ConsultarUsuariosAdminWindow extends JFrame {
 		EventQueue.invokeLater(new Runnable() {
 			public void run() {
 				try {
-					ConsultarUsuariosAdminWindow frame = new ConsultarUsuariosAdminWindow(opcoesWindow,ClientSocket,in,out,token);
+					ConsultarUsuariosAdminWindow frame = new ConsultarUsuariosAdminWindow(opcoesWindow,conexao,token);
 					frame.setVisible(true);
 				} catch (Exception e) {
 					e.printStackTrace();
@@ -65,7 +68,7 @@ public class ConsultarUsuariosAdminWindow extends JFrame {
 	
 	
 
-	public ConsultarUsuariosAdminWindow(OpcoesWindow opcoesWindow,Socket ClientSocket,DataInputStream in,PrintStream out,String token) {
+	public ConsultarUsuariosAdminWindow(OpcoesWindow opcoesWindow,ConexaoCliente conexao,String token) {
 		
 		this.opcoesWindow = opcoesWindow;
 		getContentPane().setLayout(null);
@@ -76,43 +79,36 @@ public class ConsultarUsuariosAdminWindow extends JFrame {
 			}
 		});
 		
-		iniciarComponentes(ClientSocket, in, out,token);
+		iniciarComponentes(token);
 	}
 	
 	
-	private boolean enviarParaServidor(Socket ClientSocket,DataInputStream in,PrintStream out,String token) {
-		ObjectMapper mapper = new ObjectMapper();
+	private void enviarParaServidor(String token) {
 		 Mensagem msg = new Mensagem();
 		 msg.op = "consultarUsuariosAdmin";
 		 msg.token = token;
-		 String json;
+
 		try {
-			json = mapper.writeValueAsString(msg);
-			out.println(json);
-			 System.out.println("ENVIADO: "+json);
+			 String json = conexao.mapper.writeValueAsString(msg);
 			 //clienteTXT.setText(json);
-		} catch (JsonProcessingException e) {
-			JOptionPane.showMessageDialog(null,"Erro ao criar JSON", e.getMessage(), JOptionPane.ERROR_MESSAGE);
-		}
-		
-		try {
-			String respostaJson = in.readLine();
-			   System.out.println("RECEBIDO: "+respostaJson);
-			  // serverTXT.setText(respostaJson);
-			Mensagem resposta = mapper.readValue(respostaJson, Mensagem.class);
-			PopularTabela(resposta);
-			if("200".equals(resposta.resposta)) {
-				JOptionPane.showMessageDialog(null,"Lista encontrada!",String.valueOf(resposta.resposta) ,JOptionPane.INFORMATION_MESSAGE);
-				return true;
-			}else {
-				JOptionPane.showMessageDialog(null,resposta.mensagem,String.valueOf(resposta.resposta) ,JOptionPane.ERROR_MESSAGE);
-			}
-		} catch (IOException e) {
-		    JOptionPane.showMessageDialog(null, "Conexão com servidor perdida!", "Erro", JOptionPane.ERROR_MESSAGE);
-		    
-		}
-	
-		return false;
+			 Mensagem resp = conexao.aguardarResposta();
+			 
+			 String jsonRecebido = conexao.mapper.writeValueAsString(resp);
+			 PopularTabela(resp);
+			 if ("200".equals(resp.resposta)) {
+	              JOptionPane.showMessageDialog(this,"Lista encontrada!", resp.resposta, JOptionPane.INFORMATION_MESSAGE);
+	               fecharJanela();
+			  }else {
+	                JOptionPane.showMessageDialog(this,resp.mensagem, resp.resposta, JOptionPane.ERROR_MESSAGE);
+	                }
+		}  catch (InterruptedException e) {
+           Thread.currentThread().interrupt();
+           JOptionPane.showMessageDialog(this, "Operação interrompida.", "Aviso", JOptionPane.WARNING_MESSAGE);
+       } catch (IOException e) {
+           JOptionPane.showMessageDialog(this, "Conexão com servidor perdida!", "Erro", JOptionPane.ERROR_MESSAGE);
+           conexao.fechar();
+           dispose();
+       }
 	}
 	
 	
@@ -144,7 +140,7 @@ public class ConsultarUsuariosAdminWindow extends JFrame {
 	/**
 	 * Create the frame.
 	 */
-	public void iniciarComponentes(Socket ClientSocket,DataInputStream in,PrintStream out,String token) {
+	public void iniciarComponentes(String token) {
 		setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 		setBounds(100, 100, 581, 529);
 		contentPane = new JPanel();
@@ -171,6 +167,6 @@ public class ConsultarUsuariosAdminWindow extends JFrame {
 			}
 		));
 		scrollPane.setViewportView(tbUsuarios);
-		enviarParaServidor( ClientSocket, in, out, token);
+		enviarParaServidor( token);
 	}
 }

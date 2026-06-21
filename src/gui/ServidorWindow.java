@@ -36,9 +36,6 @@ public class ServidorWindow extends JFrame {
 
     private ExecutorService threadPool;
 
-    // Mapa de usuarios atualmente logados/conectados: usuario -> handler da conexao dele.
-    // Usado para rotear mensagens de uma thread de cliente para outra (enviarMensagem / broadcast)
-    // e para responder o listarUsuariosLogados.
     private final ConcurrentHashMap<String, ClienteHandler> usuariosOnline = new ConcurrentHashMap<>();
     private JLabel lblNewLabel_4;
     private JTextArea usuarioTXTAREA;
@@ -88,14 +85,8 @@ public class ServidorWindow extends JFrame {
         
         private boolean logado = false;
         private String tokenArmazenado = null;
-
-        // Saida de dados para ESTE cliente. Precisa ser campo (nao variavel local de run())
-        // porque outras threads (de OUTROS clientes) escrevem aqui quando alguem manda
-        // uma mensagem para este usuario.
         private PrintWriter out;
 
-        // Usuario real (ex: "joao123" ou "admin") associado a esta conexao, preenchido no login.
-        // Eh a chave usada no mapa usuariosOnline.
         private String usuarioLogado = null;
 
         public ClienteHandler(Socket clientSocket, UsuarioService service) {
@@ -190,9 +181,6 @@ public class ServidorWindow extends JFrame {
                                         tokenArmazenado = resposta.token;
                                     }
                                     logado = true;
-
-                                    // Registra este usuario como online, para poder receber mensagens
-                                    // e aparecer no listarUsuariosLogados.
                                     usuarioLogado = user.getUsuario();
                                     usuariosOnline.put(usuarioLogado, this);
                                     atualizarUsuariosOnlineTela();
@@ -379,7 +367,6 @@ public class ServidorWindow extends JFrame {
                                 if (del1 == 1 && logado) {
                                     resposta.resposta = "200";
                                     resposta.mensagem = "Usuario deletado";
-                                    // Se a vitima estiver online, derruba ela da lista de online tambem.
                                     usuariosOnline.remove(msg.usuario);
                                     atualizarUsuariosOnlineTela();
                                 } else {
@@ -411,7 +398,6 @@ public class ServidorWindow extends JFrame {
                                 }
 
                                 if (msg.destinatario.equals("/todos")) {
-                                    // BROADCAST: manda para todo mundo online, exceto quem enviou.
                                     int enviados = 0;
                                     for (ClienteHandler cliente : usuariosOnline.values()) {
                                         if (cliente == this) continue;
@@ -486,8 +472,6 @@ public class ServidorWindow extends JFrame {
             } catch (IOException e) {
                 appendServidor("Cliente desconectado.\n");
             } finally {
-                // Garante que, ao cair a conexao (fechou o app, perdeu rede, etc),
-                // o usuario saia da lista de online e pare de receber mensagens.
                 if (usuarioLogado != null) {
                     usuariosOnline.remove(usuarioLogado);
                     atualizarUsuariosOnlineTela();
@@ -500,14 +484,7 @@ public class ServidorWindow extends JFrame {
                     clientSocket.close();
                 } catch (IOException ignored) {}
             }
-        }
-
-        /**
-         * Chamado pela thread de OUTRO cliente para entregar uma mensagem a este cliente.
-         * PrintWriter.println ja eh sincronizado internamente, entao isso eh seguro mesmo
-         * concorrendo com a propria thread deste handler escrevendo respostas normais.
-         */
-        
+        }        
         private void atualizarUsuariosOnlineTela() {
             SwingUtilities.invokeLater(() -> {
                 usuarioTXTAREA.setText("");
