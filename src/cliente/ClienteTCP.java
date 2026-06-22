@@ -8,6 +8,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import entities.Mensagem;
+import entities.Usuario;
 
 public class ClienteTCP {
 
@@ -19,10 +20,10 @@ public class ClienteTCP {
     static volatile boolean conectado = true;
 
     private static void imprimirListaUsuariosLogados(Mensagem resp) {
-        if ("200".equals(resp.resposta) && resp.usuariosLogados != null) {
-            System.out.println("\nUsuarios logados agora (" + resp.usuariosLogados.size() + "):");
-            for (String u : resp.usuariosLogados) {
-                System.out.println(" - " + u);
+        if ("200".equals(resp.resposta) && resp.lista_usuarios != null) {
+            System.out.println("\nUsuarios logados agora (" + resp.lista_usuarios.size() + "):");
+            for (Usuario u : resp.lista_usuarios) {  
+                System.out.println(" - " + u.getUsuario()); 
             }
         } else {
             System.out.println("Nao foi possivel obter a lista de usuarios logados: " + resp.mensagem);

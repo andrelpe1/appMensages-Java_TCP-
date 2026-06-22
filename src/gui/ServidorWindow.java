@@ -440,10 +440,16 @@ public class ServidorWindow extends JFrame {
                                     resposta.mensagem = "Token invalido";
                                     break;
                                 }
+                                List<Usuario> logados = new ArrayList<>();
+                                for (String nomeLogado : usuariosOnline.keySet()) {
+                                    Usuario u1 = new Usuario();
+                                    u1.setUsuario(nomeLogado); 
+                                    logados.add(u1);
+                                }
                                 resposta.resposta = "200";
                                 resposta.op = "listarUsuariosLogados";
                                 resposta.mensagem = "Lista de usuarios logados";
-                                resposta.usuariosLogados = new ArrayList<>(usuariosOnline.keySet());
+                                resposta.lista_usuarios = logados;
                                 break;
                             }
 

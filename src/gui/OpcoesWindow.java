@@ -9,6 +9,7 @@ import javax.swing.border.EmptyBorder;
 
 import cliente.ConexaoCliente;
 import entities.Mensagem;
+import entities.Usuario;
 
 public class OpcoesWindow extends JFrame {
 
@@ -216,9 +217,9 @@ public class OpcoesWindow extends JFrame {
         Mensagem resp = enviarEAguardar(msg);
         if (resp == null) return;
 
-        if ("200".equals(resp.resposta) && resp.usuariosLogados != null) {
-            StringBuilder sb = new StringBuilder("Usuários logados (" + resp.usuariosLogados.size() + "):\n");
-            for (String u : resp.usuariosLogados) sb.append(" - ").append(u).append("\n");
+        if ("200".equals(resp.resposta) && resp.lista_usuarios != null) {
+            StringBuilder sb = new StringBuilder("Usuários logados (" + resp.lista_usuarios.size() + "):\n");
+            for (Usuario u : resp.lista_usuarios) sb.append(" - ").append(u.getUsuario()).append("\n");
             JOptionPane.showMessageDialog(this, sb.toString(), "Usuários Online", JOptionPane.INFORMATION_MESSAGE);
         } else {
             JOptionPane.showMessageDialog(this, resp.mensagem, resp.resposta, JOptionPane.ERROR_MESSAGE);

@@ -16,8 +16,6 @@ public class Mensagem {
 
 	  public String destinatario; 
 	  public String remetente;    
-
-	  public List<String> usuariosLogados;
 	  
 	  public List<Usuario> getLista_usuarios() {
 		    return lista_usuarios;
