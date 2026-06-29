@@ -22,8 +22,8 @@ public class ClienteTCP {
     private static void imprimirListaUsuariosLogados(Mensagem resp) {
         if ("200".equals(resp.resposta) && resp.lista_usuarios != null) {
             System.out.println("\nUsuarios logados agora (" + resp.lista_usuarios.size() + "):");
-            for (Usuario u : resp.lista_usuarios) {  
-                System.out.println(" - " + u.getUsuario()); 
+            for (String u : resp.lista_usuarios) {
+                System.out.println(" - " + u);
             }
         } else {
             System.out.println("Nao foi possivel obter a lista de usuarios logados: " + resp.mensagem);

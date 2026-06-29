@@ -289,7 +289,7 @@ public class ServidorWindow extends JFrame {
                                 }
                                 List<Usuario> usuarios = service.listarUsuarios();
                                 resposta.resposta = "200";
-                                resposta.lista_usuarios = usuarios;
+                                resposta.lista_usuarios1 = usuarios;
                                 break;
 
                             case "CONSULTARUSUARIOADMIN":
@@ -440,16 +440,10 @@ public class ServidorWindow extends JFrame {
                                     resposta.mensagem = "Token invalido";
                                     break;
                                 }
-                                List<Usuario> logados = new ArrayList<>();
-                                for (String nomeLogado : usuariosOnline.keySet()) {
-                                    Usuario u1 = new Usuario();
-                                    u1.setUsuario(nomeLogado); 
-                                    logados.add(u1);
-                                }
                                 resposta.resposta = "200";
                                 resposta.op = "listarUsuariosLogados";
                                 resposta.mensagem = "Lista de usuarios logados";
-                                resposta.lista_usuarios = logados;
+                                resposta.lista_usuarios = new ArrayList<>(usuariosOnline.keySet());
                                 break;
                             }
 

@@ -120,7 +120,7 @@ public class ConsultarUsuariosAdminWindow extends JFrame {
 				modelo.fireTableDataChanged();
 				modelo.setRowCount(0);
 		
-				List<Usuario> listaUsuarios = lista.lista_usuarios;
+				List<Usuario> listaUsuarios = lista.lista_usuarios1;
 		
 				for (Usuario usuario : listaUsuarios) {
 		
