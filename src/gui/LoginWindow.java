@@ -97,6 +97,7 @@ public class LoginWindow extends JFrame {
 			  if ("200".equals(resp.resposta)) {
 	              JOptionPane.showMessageDialog(this,resp.mensagem, resp.resposta, JOptionPane.INFORMATION_MESSAGE);
 	              opcoesWindow.setToken(resp.token);
+	              opcoesWindow.listarUsuariosAposLogin();
 	               fecharJanela();
 			  }else {
 	                JOptionPane.showMessageDialog(this,resp.mensagem, resp.resposta, JOptionPane.ERROR_MESSAGE);

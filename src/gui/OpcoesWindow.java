@@ -225,6 +225,23 @@ public class OpcoesWindow extends JFrame {
             JOptionPane.showMessageDialog(this, resp.mensagem, resp.resposta, JOptionPane.ERROR_MESSAGE);
         }
     }
+    
+    void listarUsuariosAposLogin() {
+        if (token == null) return;
+
+        Mensagem msg = new Mensagem();
+        msg.op    = "listarUsuariosLogados";
+        msg.token = token;
+
+        Mensagem resp = enviarEAguardar(msg);
+        if (resp == null) return;
+
+        if ("200".equals(resp.resposta) && resp.lista_usuarios != null) {
+            StringBuilder sb = new StringBuilder("Usuários logados agora (" + resp.lista_usuarios.size() + "):\n");
+            for (String u : resp.lista_usuarios) sb.append(" - ").append(u).append("\n");
+            JOptionPane.showMessageDialog(this, sb.toString(), "Usuários Online", JOptionPane.INFORMATION_MESSAGE);
+        }
+    }
 
     private void fecharConexao() {
         conexao.fechar();
